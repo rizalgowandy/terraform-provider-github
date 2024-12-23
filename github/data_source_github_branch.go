@@ -5,8 +5,8 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/google/go-github/v41/github"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/google/go-github/v66/github"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 func dataSourceGithubBranch() *schema.Resource {
@@ -47,12 +47,11 @@ func dataSourceGithubBranchRead(d *schema.ResourceData, meta interface{}) error 
 	branchName := d.Get("branch").(string)
 	branchRefName := "refs/heads/" + branchName
 
-	log.Printf("[DEBUG] Reading GitHub branch reference %s/%s (%s)", orgName, repoName, branchRefName)
 	ref, resp, err := client.Git.GetRef(context.TODO(), orgName, repoName, branchRefName)
 	if err != nil {
 		if err, ok := err.(*github.ErrorResponse); ok {
 			if err.Response.StatusCode == http.StatusNotFound {
-				log.Printf("Error reading GitHub branch reference %s/%s (%s): %s", orgName, repoName, branchRefName, err)
+				log.Printf("[DEBUG] Missing GitHub branch %s/%s (%s)", orgName, repoName, branchRefName)
 				d.SetId("")
 				return nil
 			}
@@ -61,9 +60,18 @@ func dataSourceGithubBranchRead(d *schema.ResourceData, meta interface{}) error 
 	}
 
 	d.SetId(buildTwoPartID(repoName, branchName))
-	d.Set("etag", resp.Header.Get("ETag"))
-	d.Set("ref", *ref.Ref)
-	d.Set("sha", *ref.Object.SHA)
+	err = d.Set("etag", resp.Header.Get("ETag"))
+	if err != nil {
+		return err
+	}
+	err = d.Set("ref", *ref.Ref)
+	if err != nil {
+		return err
+	}
+	err = d.Set("sha", *ref.Object.SHA)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }

@@ -7,8 +7,8 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/google/go-github/v41/github"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/google/go-github/v66/github"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 func resourceGithubBranch() *schema.Resource {
@@ -22,38 +22,45 @@ func resourceGithubBranch() *schema.Resource {
 
 		Schema: map[string]*schema.Schema{
 			"repository": {
-				Type:     schema.TypeString,
-				Required: true,
-				ForceNew: true,
+				Type:        schema.TypeString,
+				Required:    true,
+				ForceNew:    true,
+				Description: "The GitHub repository name.",
 			},
 			"branch": {
-				Type:     schema.TypeString,
-				Required: true,
-				ForceNew: true,
+				Type:        schema.TypeString,
+				Required:    true,
+				ForceNew:    true,
+				Description: "The repository branch to create.",
 			},
 			"source_branch": {
-				Type:     schema.TypeString,
-				Default:  "main",
-				Optional: true,
-				ForceNew: true,
+				Type:        schema.TypeString,
+				Default:     "main",
+				Optional:    true,
+				ForceNew:    true,
+				Description: "The branch name to start from. Defaults to 'main'.",
 			},
 			"source_sha": {
-				Type:     schema.TypeString,
-				Optional: true,
-				ForceNew: true,
-				Computed: true,
+				Type:        schema.TypeString,
+				Optional:    true,
+				ForceNew:    true,
+				Computed:    true,
+				Description: "The commit hash to start from. Defaults to the tip of 'source_branch'. If provided, 'source_branch' is ignored.",
 			},
 			"etag": {
-				Type:     schema.TypeString,
-				Computed: true,
+				Type:        schema.TypeString,
+				Computed:    true,
+				Description: "An etag representing the Branch object.",
 			},
 			"ref": {
-				Type:     schema.TypeString,
-				Computed: true,
+				Type:        schema.TypeString,
+				Computed:    true,
+				Description: "A string representing a branch reference, in the form of 'refs/heads/<branch>'.",
 			},
 			"sha": {
-				Type:     schema.TypeString,
-				Computed: true,
+				Type:        schema.TypeString,
+				Computed:    true,
+				Description: "A string storing the reference's HEAD commit's SHA1.",
 			},
 		},
 	}
@@ -74,25 +81,25 @@ func resourceGithubBranchCreate(d *schema.ResourceData, meta interface{}) error 
 	sourceBranchRefName := "refs/heads/" + sourceBranchName
 
 	if _, hasSourceSHA := d.GetOk("source_sha"); !hasSourceSHA {
-		log.Printf("[DEBUG] Querying GitHub branch reference %s/%s (%s) to derive source_sha",
-			orgName, repoName, sourceBranchRefName)
 		ref, _, err := client.Git.GetRef(ctx, orgName, repoName, sourceBranchRefName)
 		if err != nil {
-			return fmt.Errorf("Error querying GitHub branch reference %s/%s (%s): %s",
+			return fmt.Errorf("error querying GitHub branch reference %s/%s (%s): %s",
 				orgName, repoName, sourceBranchRefName, err)
 		}
-		d.Set("source_sha", *ref.Object.SHA)
+		if err = d.Set("source_sha", *ref.Object.SHA); err != nil {
+			return err
+		}
 	}
 	sourceBranchSHA := d.Get("source_sha").(string)
 
-	log.Printf("[DEBUG] Creating GitHub branch reference %s/%s (%s)",
-		orgName, repoName, branchRefName)
 	_, _, err := client.Git.CreateRef(ctx, orgName, repoName, &github.Reference{
 		Ref:    &branchRefName,
 		Object: &github.GitObject{SHA: &sourceBranchSHA},
 	})
-	if err != nil {
-		return fmt.Errorf("Error creating GitHub branch reference %s/%s (%s): %s",
+	// If the branch already exists, rather than erroring out just continue on to importing the branch
+	//   This avoids the case where a repo with gitignore_template and branch are being created at the same time crashing terraform
+	if err != nil && !strings.HasSuffix(err.Error(), "422 Reference already exists []") {
+		return fmt.Errorf("error creating GitHub branch reference %s/%s (%s): %s",
 			orgName, repoName, branchRefName, err)
 	}
 
@@ -115,8 +122,6 @@ func resourceGithubBranchRead(d *schema.ResourceData, meta interface{}) error {
 	}
 	branchRefName := "refs/heads/" + branchName
 
-	log.Printf("[DEBUG] Querying GitHub branch reference %s/%s (%s)",
-		orgName, repoName, branchRefName)
 	ref, resp, err := client.Git.GetRef(ctx, orgName, repoName, branchRefName)
 	if err != nil {
 		if ghErr, ok := err.(*github.ErrorResponse); ok {
@@ -124,22 +129,32 @@ func resourceGithubBranchRead(d *schema.ResourceData, meta interface{}) error {
 				return nil
 			}
 			if ghErr.Response.StatusCode == http.StatusNotFound {
-				log.Printf("[WARN] Removing branch %s/%s (%s) from state because it no longer exists in Github",
+				log.Printf("[INFO] Removing branch %s/%s (%s) from state because it no longer exists in GitHub",
 					orgName, repoName, branchName)
 				d.SetId("")
 				return nil
 			}
 		}
-		return fmt.Errorf("Error querying GitHub branch reference %s/%s (%s): %s",
+		return fmt.Errorf("error querying GitHub branch reference %s/%s (%s): %s",
 			orgName, repoName, branchRefName, err)
 	}
 
 	d.SetId(buildTwoPartID(repoName, branchName))
-	d.Set("etag", resp.Header.Get("ETag"))
-	d.Set("repository", repoName)
-	d.Set("branch", branchName)
-	d.Set("ref", *ref.Ref)
-	d.Set("sha", *ref.Object.SHA)
+	if err = d.Set("etag", resp.Header.Get("ETag")); err != nil {
+		return err
+	}
+	if err = d.Set("repository", repoName); err != nil {
+		return err
+	}
+	if err = d.Set("branch", branchName); err != nil {
+		return err
+	}
+	if err = d.Set("ref", *ref.Ref); err != nil {
+		return err
+	}
+	if err = d.Set("sha", *ref.Object.SHA); err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -155,11 +170,9 @@ func resourceGithubBranchDelete(d *schema.ResourceData, meta interface{}) error 
 	}
 	branchRefName := "refs/heads/" + branchName
 
-	log.Printf("[DEBUG] Deleting GitHub branch reference %s/%s (%s)",
-		orgName, repoName, branchRefName)
 	_, err = client.Git.DeleteRef(ctx, orgName, repoName, branchRefName)
 	if err != nil {
-		return fmt.Errorf("Error deleting GitHub branch reference %s/%s (%s): %s",
+		return fmt.Errorf("error deleting GitHub branch reference %s/%s (%s): %s",
 			orgName, repoName, branchRefName, err)
 	}
 
@@ -181,7 +194,9 @@ func resourceGithubBranchImport(d *schema.ResourceData, meta interface{}) ([]*sc
 		d.SetId(buildTwoPartID(repoName, branchName))
 	}
 
-	d.Set("source_branch", sourceBranch)
+	if err = d.Set("source_branch", sourceBranch); err != nil {
+		return nil, err
+	}
 
 	err = resourceGithubBranchRead(d, meta)
 	if err != nil {
@@ -190,7 +205,7 @@ func resourceGithubBranchImport(d *schema.ResourceData, meta interface{}) ([]*sc
 
 	// resourceGithubBranchRead calls d.SetId("") if the branch does not exist
 	if d.Id() == "" {
-		return nil, fmt.Errorf("Repository %s does not have a branch named %s.", repoName, branchName)
+		return nil, fmt.Errorf("repository %s does not have a branch named %s", repoName, branchName)
 	}
 
 	return []*schema.ResourceData{d}, nil

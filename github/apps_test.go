@@ -5,13 +5,13 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"strings"
 	"testing"
 	"time"
 
-	"gopkg.in/square/go-jose.v2"
-	"gopkg.in/square/go-jose.v2/jwt"
+	"github.com/go-jose/go-jose/v3"
+	"github.com/go-jose/go-jose/v3/jwt"
 )
 
 const (
@@ -24,7 +24,7 @@ const (
 var (
 	testEpochTime = time.Unix(0, 0)
 
-	testGitHubAppPrivateKeyPemData, _ = ioutil.ReadFile(testGitHubAppPrivateKeyFile)
+	testGitHubAppPrivateKeyPemData, _ = os.ReadFile(testGitHubAppPrivateKeyFile)
 )
 
 func TestGenerateAppJWT(t *testing.T) {
@@ -108,7 +108,7 @@ func TestGenerateAppJWT(t *testing.T) {
 	})
 
 	t.Run("produces a verifiable jwt", func(t *testing.T) {
-		publicKeyData, err := ioutil.ReadFile(testGitHubAppPublicKeyFile)
+		publicKeyData, err := os.ReadFile(testGitHubAppPublicKeyFile)
 		if err != nil {
 			t.Logf("Failed to read public key file '%s': %s", testGitHubAppPublicKeyFile, err)
 			t.FailNow()

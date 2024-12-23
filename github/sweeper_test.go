@@ -5,7 +5,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
 func TestMain(m *testing.M) {
@@ -29,7 +29,7 @@ func sharedConfigForRegion(region string) (interface{}, error) {
 
 	meta, err := config.Meta()
 	if err != nil {
-		return nil, fmt.Errorf("error getting Github meta parameter")
+		return nil, fmt.Errorf("error getting GitHub meta parameter")
 	}
 
 	return meta, nil

@@ -7,8 +7,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/google/go-github/v41/github"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/google/go-github/v66/github"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 func resourceGithubRepositoryPullRequest() *schema.Resource {
@@ -23,7 +23,9 @@ func resourceGithubRepositoryPullRequest() *schema.Resource {
 				if err != nil {
 					return nil, err
 				}
-				d.Set("base_repository", baseRepository)
+				if err := d.Set("base_repository", baseRepository); err != nil {
+					return nil, err
+				}
 
 				return []*schema.ResourceData{d}, nil
 			},
@@ -31,44 +33,52 @@ func resourceGithubRepositoryPullRequest() *schema.Resource {
 
 		Schema: map[string]*schema.Schema{
 			"owner": {
-				Type:     schema.TypeString,
-				Optional: true,
-				ForceNew: true,
+				Type:        schema.TypeString,
+				Optional:    true,
+				ForceNew:    true,
+				Description: "Owner of the repository. If not provided, the provider's default owner is used.",
 			},
 			"base_repository": {
-				Type:     schema.TypeString,
-				Required: true,
-				ForceNew: true,
+				Type:        schema.TypeString,
+				Required:    true,
+				ForceNew:    true,
+				Description: "Name of the base repository to retrieve the Pull Requests from.",
 			},
 			"base_ref": {
-				Type:     schema.TypeString,
-				Required: true,
+				Type:        schema.TypeString,
+				Required:    true,
+				Description: "Name of the branch serving as the base of the Pull Request.",
 			},
 			"head_ref": {
-				Type:     schema.TypeString,
-				Required: true,
-				ForceNew: true,
+				Type:        schema.TypeString,
+				Required:    true,
+				ForceNew:    true,
+				Description: "Name of the branch serving as the head of the Pull Request.",
 			},
 			"title": {
 				// Even though the documentation does not explicitly mark the
 				// title field as required, attempts to create a PR with an
 				// empty title result in a "missing_field" validation error
 				// (HTTP 422).
-				Type:     schema.TypeString,
-				Required: true,
+				Type:        schema.TypeString,
+				Required:    true,
+				Description: "The title of the Pull Request.",
 			},
 			"body": {
-				Type:     schema.TypeString,
-				Optional: true,
+				Type:        schema.TypeString,
+				Optional:    true,
+				Description: "Body of the Pull Request.",
 			},
 			"maintainer_can_modify": {
-				Type:     schema.TypeBool,
-				Optional: true,
-				Default:  false,
+				Type:        schema.TypeBool,
+				Optional:    true,
+				Default:     false,
+				Description: "Controls whether the base repository maintainers can modify the Pull Request. Default: 'false'.",
 			},
 			"base_sha": {
-				Type:     schema.TypeString,
-				Computed: true,
+				Type:        schema.TypeString,
+				Computed:    true,
+				Description: "Head commit SHA of the Pull Request base.",
 			},
 			"draft": {
 				// The "draft" field is an interesting corner case because while
@@ -81,12 +91,14 @@ func resourceGithubRepositoryPullRequest() *schema.Resource {
 				// And since you cannot manage the lifecycle of this field to
 				// reconcile the actual state with the desired one, this field
 				// cannot be managed by Terraform.
-				Type:     schema.TypeBool,
-				Computed: true,
+				Type:        schema.TypeBool,
+				Computed:    true,
+				Description: "Indicates Whether this Pull Request is a draft.",
 			},
 			"head_sha": {
-				Type:     schema.TypeString,
-				Computed: true,
+				Type:        schema.TypeString,
+				Computed:    true,
+				Description: "Head commit SHA of the Pull Request head.",
 			},
 			"labels": {
 				Type:        schema.TypeList,
@@ -95,12 +107,14 @@ func resourceGithubRepositoryPullRequest() *schema.Resource {
 				Description: "List of names of labels on the PR",
 			},
 			"number": {
-				Type:     schema.TypeInt,
-				Computed: true,
+				Type:        schema.TypeInt,
+				Computed:    true,
+				Description: "The number of the Pull Request within the repository.",
 			},
 			"opened_at": {
-				Type:     schema.TypeInt,
-				Computed: true,
+				Type:        schema.TypeInt,
+				Computed:    true,
+				Description: "Unix timestamp indicating the Pull Request creation time.",
 			},
 			"opened_by": {
 				Type:        schema.TypeString,
@@ -108,12 +122,14 @@ func resourceGithubRepositoryPullRequest() *schema.Resource {
 				Description: "Username of the PR creator",
 			},
 			"state": {
-				Type:     schema.TypeString,
-				Computed: true,
+				Type:        schema.TypeString,
+				Computed:    true,
+				Description: "The current Pull Request state - can be 'open', 'closed' or 'merged'.",
 			},
 			"updated_at": {
-				Type:     schema.TypeInt,
-				Computed: true,
+				Type:        schema.TypeInt,
+				Computed:    true,
+				Description: "The timestamp of the last Pull Request update.",
 			},
 		},
 	}
@@ -173,46 +189,77 @@ func resourceGithubRepositoryPullRequestRead(d *schema.ResourceData, meta interf
 		return err
 	}
 
-	d.Set("number", pullRequest.GetNumber())
+	if err = d.Set("number", pullRequest.GetNumber()); err != nil {
+		return err
+	}
 
 	if head := pullRequest.GetHead(); head != nil {
-		d.Set("head_ref", head.GetRef())
-		d.Set("head_sha", head.GetSHA())
+		if err = d.Set("head_ref", head.GetRef()); err != nil {
+			return err
+		}
+
+		if err = d.Set("head_sha", head.GetSHA()); err != nil {
+			return err
+		}
 	} else {
 		// Totally unexpected condition. Better do that than segfault, I guess?
-		log.Printf("[WARN] Head branch missing, expected %s", d.Get("head_ref"))
+		log.Printf("[INFO] Head branch missing, expected %s", d.Get("head_ref"))
 		d.SetId("")
 		return nil
 	}
 
 	if base := pullRequest.GetBase(); base != nil {
-		d.Set("base_ref", base.GetRef())
-		d.Set("base_sha", base.GetSHA())
+		if err = d.Set("base_ref", base.GetRef()); err != nil {
+			return err
+		}
+		if err = d.Set("base_sha", base.GetSHA()); err != nil {
+			return err
+		}
 	} else {
 		// Seme logic as with the missing head branch.
-		log.Printf("[WARN] Base branch missing, expected %s", d.Get("base_ref"))
+		log.Printf("[INFO] Base branch missing, expected %s", d.Get("base_ref"))
 		d.SetId("")
 		return nil
 	}
 
-	d.Set("body", pullRequest.GetBody())
-	d.Set("title", pullRequest.GetTitle())
-	d.Set("draft", pullRequest.GetDraft())
-	d.Set("maintainer_can_modify", pullRequest.GetMaintainerCanModify())
-	d.Set("number", pullRequest.GetNumber())
-	d.Set("state", pullRequest.GetState())
-	d.Set("opened_at", pullRequest.GetCreatedAt().Unix())
-	d.Set("updated_at", pullRequest.GetUpdatedAt().Unix())
+	if err = d.Set("body", pullRequest.GetBody()); err != nil {
+		return err
+	}
+	if err = d.Set("title", pullRequest.GetTitle()); err != nil {
+		return err
+	}
+	if err = d.Set("draft", pullRequest.GetDraft()); err != nil {
+		return err
+	}
+	if err = d.Set("maintainer_can_modify", pullRequest.GetMaintainerCanModify()); err != nil {
+		return err
+	}
+	if err = d.Set("number", pullRequest.GetNumber()); err != nil {
+		return err
+	}
+	if err = d.Set("state", pullRequest.GetState()); err != nil {
+		return err
+	}
+	if err = d.Set("opened_at", pullRequest.GetCreatedAt().Unix()); err != nil {
+		return err
+	}
+	if err = d.Set("updated_at", pullRequest.GetUpdatedAt().Unix()); err != nil {
+		return err
+	}
 
 	if user := pullRequest.GetUser(); user != nil {
-		d.Set("opened_by", user.GetLogin())
+		if err = d.Set("opened_by", user.GetLogin()); err != nil {
+			return err
+		}
 	}
 
 	labels := []string{}
 	for _, label := range pullRequest.Labels {
 		labels = append(labels, label.GetName())
 	}
-	d.Set("labels", labels)
+	if err = d.Set("labels", labels); err != nil {
+		return err
+	}
 
 	return nil
 }

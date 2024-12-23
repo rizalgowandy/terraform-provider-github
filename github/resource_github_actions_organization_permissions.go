@@ -5,9 +5,9 @@ import (
 	"errors"
 	"log"
 
-	"github.com/google/go-github/v41/github"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+	"github.com/google/go-github/v66/github"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 func resourceGithubActionsOrganizationPermissions() *schema.Resource {
@@ -17,53 +17,61 @@ func resourceGithubActionsOrganizationPermissions() *schema.Resource {
 		Update: resourceGithubActionsOrganizationPermissionsCreateOrUpdate,
 		Delete: resourceGithubActionsOrganizationPermissionsDelete,
 		Importer: &schema.ResourceImporter{
-			State: schema.ImportStatePassthrough,
+			StateContext: schema.ImportStatePassthroughContext,
 		},
 
 		Schema: map[string]*schema.Schema{
 			"allowed_actions": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				ValidateFunc: validation.StringInSlice([]string{"all", "local_only", "selected"}, false),
+				Type:             schema.TypeString,
+				Optional:         true,
+				Description:      "The permissions policy that controls the actions that are allowed to run. Can be one of: 'all', 'local_only', or 'selected'.",
+				ValidateDiagFunc: toDiagFunc(validation.StringInSlice([]string{"all", "local_only", "selected"}, false), "allowed_actions"),
 			},
 			"enabled_repositories": {
-				Type:         schema.TypeString,
-				Required:     true,
-				ValidateFunc: validation.StringInSlice([]string{"all", "none", "selected"}, false),
+				Type:             schema.TypeString,
+				Required:         true,
+				Description:      "The policy that controls the repositories in the organization that are allowed to run GitHub Actions. Can be one of: 'all', 'none', or 'selected'.",
+				ValidateDiagFunc: toDiagFunc(validation.StringInSlice([]string{"all", "none", "selected"}, false), "enabled_repositories"),
 			},
 			"allowed_actions_config": {
-				Type:     schema.TypeList,
-				Optional: true,
-				MaxItems: 1,
+				Type:        schema.TypeList,
+				Optional:    true,
+				MaxItems:    1,
+				Description: "Sets the actions that are allowed in an organization. Only available when 'allowed_actions' = 'selected'",
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"github_owned_allowed": {
-							Type:     schema.TypeBool,
-							Required: true,
+							Type:        schema.TypeBool,
+							Required:    true,
+							Description: "Whether GitHub-owned actions are allowed in the organization.",
 						},
 						"patterns_allowed": {
-							Type:     schema.TypeSet,
-							Optional: true,
-							Elem:     &schema.Schema{Type: schema.TypeString},
-							Set:      schema.HashString,
+							Type:        schema.TypeSet,
+							Optional:    true,
+							Description: "Specifies a list of string-matching patterns to allow specific action(s). Wildcards, tags, and SHAs are allowed. For example, 'monalisa/octocat@', 'monalisa/octocat@v2', 'monalisa/'.",
+							Elem:        &schema.Schema{Type: schema.TypeString},
+							Set:         schema.HashString,
 						},
 						"verified_allowed": {
-							Type:     schema.TypeBool,
-							Optional: true,
+							Type:        schema.TypeBool,
+							Optional:    true,
+							Description: "Whether actions in GitHub Marketplace from verified creators are allowed. Set to 'true' to allow all GitHub Marketplace actions by verified creators.",
 						},
 					},
 				},
 			},
 			"enabled_repositories_config": {
-				Type:     schema.TypeList,
-				Optional: true,
-				MaxItems: 1,
+				Type:        schema.TypeList,
+				Optional:    true,
+				MaxItems:    1,
+				Description: "Sets the list of selected repositories that are enabled for GitHub Actions in an organization. Only available when 'enabled_repositories' = 'selected'.",
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"repository_ids": {
-							Type:     schema.TypeSet,
-							Elem:     &schema.Schema{Type: schema.TypeInt},
-							Required: true,
+							Type:        schema.TypeSet,
+							Description: "List of repository IDs to enable for GitHub Actions.",
+							Elem:        &schema.Schema{Type: schema.TypeInt},
+							Required:    true,
 						},
 					},
 				},
@@ -99,8 +107,7 @@ func resourceGithubActionsOrganizationAllowedObject(d *schema.ResourceData) (*gi
 
 		allowed.PatternsAllowed = patternsAllowed
 	} else {
-		return &github.ActionsAllowed{},
-			errors.New("The allowed_actions_config {} block must be specified if allowed_actions == 'selected'.")
+		return nil, nil
 	}
 
 	return allowed, nil
@@ -110,7 +117,6 @@ func resourceGithubActionsEnabledRepositoriesObject(d *schema.ResourceData) ([]i
 	var enabled []int64
 
 	config := d.Get("enabled_repositories_config").([]interface{})
-	log.Printf("[help] length of config in actopms enabled is %v", len(config))
 	if len(config) > 0 {
 		data := config[0].(map[string]interface{})
 		switch x := data["repository_ids"].(type) {
@@ -120,7 +126,7 @@ func resourceGithubActionsEnabledRepositoriesObject(d *schema.ResourceData) ([]i
 			}
 		}
 	} else {
-		return nil, errors.New("The enabled_repositories_config {} block must be specified if enabled_repositories == 'selected'.")
+		return nil, errors.New("the enabled_repositories_config {} block must be specified if enabled_repositories == 'selected'")
 	}
 	return enabled, nil
 }
@@ -141,7 +147,7 @@ func resourceGithubActionsOrganizationPermissionsCreateOrUpdate(d *schema.Resour
 	allowedActions := d.Get("allowed_actions").(string)
 	enabledRepositories := d.Get("enabled_repositories").(string)
 
-	_, _, err = client.Organizations.EditActionsPermissions(ctx,
+	_, _, err = client.Actions.EditActionsPermissions(ctx,
 		orgName,
 		github.ActionsPermissions{
 			AllowedActions:      &allowedActions,
@@ -156,11 +162,16 @@ func resourceGithubActionsOrganizationPermissionsCreateOrUpdate(d *schema.Resour
 		if err != nil {
 			return err
 		}
-		_, _, err = client.Organizations.EditActionsAllowed(ctx,
-			orgName,
-			*actionsAllowedData)
-		if err != nil {
-			return err
+		if actionsAllowedData != nil {
+			log.Printf("[DEBUG] Allowed actions config is set")
+			_, _, err = client.Actions.EditActionsAllowed(ctx,
+				orgName,
+				*actionsAllowedData)
+			if err != nil {
+				return err
+			}
+		} else {
+			log.Printf("[DEBUG] Allowed actions config not set, skipping")
 		}
 	}
 
@@ -190,29 +201,43 @@ func resourceGithubActionsOrganizationPermissionsRead(d *schema.ResourceData, me
 		return err
 	}
 
-	actionsPermissions, _, err := client.Organizations.GetActionsPermissions(ctx, d.Id())
+	actionsPermissions, _, err := client.Actions.GetActionsPermissions(ctx, d.Id())
 	if err != nil {
 		return err
 	}
 
-	if actionsPermissions.GetAllowedActions() == "selected" {
-		actionsAllowed, _, err := client.Organizations.GetActionsAllowed(ctx, d.Id())
+	// only load and fill allowed_actions_config if allowed_actions_config is also set
+	// in the TF code. (see #2105)
+	// on initial import there might not be any value in the state, then we have to import the data
+	// -> but we can only load an existing state if the current config is set to "selected" (see #2182)
+	allowedActions := d.Get("allowed_actions").(string)
+	allowedActionsConfig := d.Get("allowed_actions_config").([]interface{})
+
+	serverHasAllowedActionsConfig := actionsPermissions.GetAllowedActions() == "selected"
+	userWantsAllowedActionsConfig := (allowedActions == "selected" && len(allowedActionsConfig) > 0) || allowedActions == ""
+
+	if serverHasAllowedActionsConfig && userWantsAllowedActionsConfig {
+		actionsAllowed, _, err := client.Actions.GetActionsAllowed(ctx, d.Id())
 		if err != nil {
 			return err
 		}
 
 		// If actionsAllowed set to local/all by removing all actions config settings, the response will be empty
 		if actionsAllowed != nil {
-			d.Set("allowed_actions_config", []interface{}{
+			if err = d.Set("allowed_actions_config", []interface{}{
 				map[string]interface{}{
 					"github_owned_allowed": actionsAllowed.GetGithubOwnedAllowed(),
 					"patterns_allowed":     actionsAllowed.PatternsAllowed,
 					"verified_allowed":     actionsAllowed.GetVerifiedAllowed(),
 				},
-			})
+			}); err != nil {
+				return err
+			}
 		}
 	} else {
-		d.Set("allowed_actions_config", []interface{}{})
+		if err = d.Set("allowed_actions_config", []interface{}{}); err != nil {
+			return err
+		}
 	}
 
 	if actionsPermissions.GetEnabledRepositories() == "selected" {
@@ -237,18 +262,26 @@ func resourceGithubActionsOrganizationPermissionsRead(d *schema.ResourceData, me
 			repoList = append(repoList, *allRepos[index].ID)
 		}
 		if allRepos != nil {
-			d.Set("enabled_repositories_config", []interface{}{
+			if err = d.Set("enabled_repositories_config", []interface{}{
 				map[string]interface{}{
 					"repository_ids": repoList,
 				},
-			})
+			}); err != nil {
+				return err
+			}
 		} else {
-			d.Set("enabled_repositories_config", []interface{}{})
+			if err = d.Set("enabled_repositories_config", []interface{}{}); err != nil {
+				return err
+			}
 		}
 	}
 
-	d.Set("allowed_actions", actionsPermissions.GetAllowedActions())
-	d.Set("enabled_repositories", actionsPermissions.GetEnabledRepositories())
+	if err = d.Set("allowed_actions", actionsPermissions.GetAllowedActions()); err != nil {
+		return err
+	}
+	if err = d.Set("enabled_repositories", actionsPermissions.GetEnabledRepositories()); err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -264,7 +297,7 @@ func resourceGithubActionsOrganizationPermissionsDelete(d *schema.ResourceData, 
 	}
 
 	// This will nullify any allowedActions elements
-	_, _, err = client.Organizations.EditActionsPermissions(ctx,
+	_, _, err = client.Actions.EditActionsPermissions(ctx,
 		orgName,
 		github.ActionsPermissions{
 			AllowedActions:      github.String("all"),

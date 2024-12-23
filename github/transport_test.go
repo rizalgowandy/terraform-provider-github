@@ -3,14 +3,15 @@ package github
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"testing"
+	"time"
 
-	"github.com/google/go-github/v41/github"
+	"github.com/google/go-github/v66/github"
 )
 
 func TestEtagTransport(t *testing.T) {
@@ -51,9 +52,9 @@ func githubApiMock(responseSequence []*mockResponse) *httptest.Server {
 		w.Header().Set("Content-Type", "application/json; charset=utf-8")
 		w.Header().Set("Server", "GitHub.com")
 
-		bodyBytes, err := ioutil.ReadAll(r.Body)
+		bodyBytes, err := io.ReadAll(r.Body)
 		if err != nil {
-			log.Printf("[ERROR] %s", err)
+			log.Printf("[DEBUG] Error: %s", err)
 		}
 		log.Printf("[DEBUG] Mock server received %s request to %q; headers:\n%s\nrequest body: %q\n",
 			r.Method, r.RequestURI, r.Header, string(bodyBytes))
@@ -76,22 +77,22 @@ func githubApiMock(responseSequence []*mockResponse) *httptest.Server {
 		}
 
 		if r.RequestURI != tc.ExpectedUri {
-			log.Printf("[ERROR] Expected URI: %q, given: %q", tc.ExpectedUri, r.RequestURI)
+			log.Printf("[DEBUG] Error: expected URI: %q, given: %q", tc.ExpectedUri, r.RequestURI)
 			w.WriteHeader(400)
 			return
 		}
 		if !headersMatch(r.Header, tc.ExpectedHeaders) {
-			log.Printf("[ERROR] Expected headers: %q, given: %q", tc.ExpectedHeaders, r.Header)
+			log.Printf("[DEBUG] Error: expected headers: %q, given: %q", tc.ExpectedHeaders, r.Header)
 			w.WriteHeader(400)
 			return
 		}
 		if tc.ExpectedMethod != "" && r.Method != tc.ExpectedMethod {
-			log.Printf("[ERROR] Expected method: %q, given: %q", tc.ExpectedMethod, r.Method)
+			log.Printf("[DEBUG] Error: expected method: %q, given: %q", tc.ExpectedMethod, r.Method)
 			w.WriteHeader(400)
 			return
 		}
 		if len(tc.ExpectedBody) > 0 && string(bodyBytes) != string(tc.ExpectedBody) {
-			log.Printf("[ERROR] Expected body: %q, given: %q",
+			log.Printf("[DEBUG] Error: expected body: %q, given: %q",
 				string(tc.ExpectedBody), string(bodyBytes))
 			w.WriteHeader(400)
 			return
@@ -269,6 +270,194 @@ func TestRateLimitTransport_abuseLimit_post_error(t *testing.T) {
 	expectedMessage := "Repository creation failed."
 	if ghErr.Message != expectedMessage {
 		t.Fatalf("Expected message %q, got: %q", expectedMessage, ghErr.Message)
+	}
+}
+func TestRateLimitTransport_smart_lock(t *testing.T) {
+	t.Run("With parallelRequests true it does not lock the rate limit transport", func(t *testing.T) {
+		rlt := NewRateLimitTransport(http.DefaultTransport, WithParallelRequests(true))
+
+		isSuccess := make(chan bool)
+		go func() {
+			rlt.m.Lock()
+			rlt.smartLock(true)
+			rlt.m.Unlock()
+			isSuccess <- true
+		}()
+		select {
+		case <-isSuccess:
+		case <-time.After(100 * time.Millisecond):
+			t.Fatalf("Expected to succeed instantly, waited 100 milliseconds unsuccessfully")
+		}
+	})
+
+	t.Run("With parallelRequests true it should not unlock the rate limit transport", func(t *testing.T) {
+		rlt := NewRateLimitTransport(http.DefaultTransport, WithParallelRequests(true))
+
+		isSuccess := make(chan bool)
+		go func() {
+			rlt.m.Lock()
+			rlt.smartLock(false)
+			rlt.m.Unlock()
+			isSuccess <- true
+		}()
+		select {
+		case <-isSuccess:
+		case <-time.After(100 * time.Millisecond):
+			t.Fatalf("Expected to succeed instantly, waited 100 milliseconds unsuccessfully")
+		}
+	})
+
+	t.Run("With parallelRequests false with a lock present it should get stuck waiting", func(t *testing.T) {
+		rlt := NewRateLimitTransport(http.DefaultTransport, WithParallelRequests(false))
+
+		isSuccess := make(chan bool)
+		go func() {
+			rlt.m.Lock()
+			rlt.smartLock(true)
+			isSuccess <- true
+		}()
+		select {
+		case <-isSuccess:
+			t.Fatalf("Expected get stuck waiting but it acquired the lock successfully")
+		case <-time.After(100 * time.Millisecond):
+		}
+	})
+
+	t.Run("With parallelRequests false and a lock present it should be able to unlock the rate limit transport", func(t *testing.T) {
+		rlt := NewRateLimitTransport(http.DefaultTransport, WithParallelRequests(false))
+
+		isSuccess := make(chan bool)
+		go func() {
+			rlt.m.Lock()
+			rlt.smartLock(false)
+			rlt.m.Lock()
+			defer rlt.m.Unlock()
+			isSuccess <- true
+		}()
+		select {
+		case <-isSuccess:
+		case <-time.After(100 * time.Millisecond):
+			t.Fatalf("Expected to succeed instantly, waited 100 milliseconds unsuccessfully")
+		}
+	})
+}
+
+func TestRetryTransport_retry_post_error(t *testing.T) {
+	ts := githubApiMock([]*mockResponse{
+		{
+			ExpectedUri:    "/orgs/tada/repos",
+			ExpectedMethod: "POST",
+			ExpectedBody: []byte(`{"name":"radek-example-48","description":""}
+`),
+			ResponseBody: `{
+  "message": "internal server error"
+}`,
+			StatusCode: 500,
+		},
+		{
+			ExpectedUri:    "/orgs/tada/repos",
+			ExpectedMethod: "POST",
+			ExpectedBody: []byte(`{"name":"radek-example-48","description":""}
+`),
+			ResponseBody: `{
+  "message": "internal server error"
+}`,
+			StatusCode: 500,
+		},
+		{
+			ExpectedUri:    "/orgs/tada/repos",
+			ExpectedMethod: "POST",
+			ExpectedBody: []byte(`{"name":"radek-example-48","description":""}
+`),
+			ResponseBody: `{
+  "message": "internal server error"
+}`,
+			StatusCode: 201,
+		},
+	})
+	defer ts.Close()
+
+	httpClient := http.DefaultClient
+	httpClient.Transport = NewRetryTransport(http.DefaultTransport, WithMaxRetries(1))
+
+	client := github.NewClient(httpClient)
+	u, _ := url.Parse(ts.URL + "/")
+	client.BaseURL = u
+
+	ctx := context.WithValue(context.Background(), ctxId, t.Name())
+	_, _, err := client.Repositories.Create(ctx, "tada", &github.Repository{
+		Name:        github.String("radek-example-48"),
+		Description: github.String(""),
+	})
+	if err == nil {
+		t.Fatal("Expected error not to be nil")
+	}
+
+	ghErr, ok := err.(*github.ErrorResponse)
+	if !ok {
+		t.Fatalf("Expected github.ErrorResponse, got: %#v", err)
+	}
+
+	expectedMessage := "internal server error"
+	if ghErr.Message != expectedMessage {
+		t.Fatalf("Expected message %q, got: %q", expectedMessage, ghErr.Message)
+	}
+}
+
+func TestRetryTransport_retry_post_success(t *testing.T) {
+	ts := githubApiMock([]*mockResponse{
+		{
+			ExpectedUri:    "/orgs/tada/repos",
+			ExpectedMethod: "POST",
+			ExpectedBody: []byte(`{"name":"radek-example-48","description":""}
+`),
+			ResponseBody: `{
+  "message": "internal server error"
+}`,
+			StatusCode: 500,
+		},
+		{
+			ExpectedUri:    "/orgs/tada/repos",
+			ExpectedMethod: "POST",
+			ExpectedBody: []byte(`{"name":"radek-example-48","description":""}
+`),
+			ResponseBody: `{
+  "message": "internal server error"
+}`,
+			StatusCode: 500,
+		},
+		{
+			ExpectedUri:    "/orgs/tada/repos",
+			ExpectedMethod: "POST",
+			ExpectedBody: []byte(`{"name":"radek-example-48","description":""}
+`),
+			ResponseBody: `{
+  "message": "Resource created"
+}`,
+			StatusCode: 201,
+		},
+	})
+	defer ts.Close()
+
+	httpClient := http.DefaultClient
+	httpClient.Transport = NewRetryTransport(http.DefaultTransport, WithMaxRetries(2), WithRetryDelay(time.Second))
+
+	client := github.NewClient(httpClient)
+	u, _ := url.Parse(ts.URL + "/")
+	client.BaseURL = u
+
+	ctx := context.WithValue(context.Background(), ctxId, t.Name())
+	_, _, err := client.Repositories.Create(ctx, "tada", &github.Repository{
+		Name:        github.String("radek-example-48"),
+		Description: github.String(""),
+	})
+	if err != nil {
+		t.Fatalf("Expected error to be nil, got %v", err)
+	}
+
+	ghErr, _ := err.(*github.ErrorResponse)
+	if ghErr != nil {
+		t.Fatalf("Expected successful github call, got: %q", ghErr.Message)
 	}
 }
 

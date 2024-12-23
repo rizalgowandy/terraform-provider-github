@@ -3,8 +3,8 @@ package github
 import (
 	"context"
 
-	"github.com/google/go-github/v41/github"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/google/go-github/v66/github"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 func resourceGithubActionsOrganizationSecretRepositories() *schema.Resource {
@@ -14,23 +14,25 @@ func resourceGithubActionsOrganizationSecretRepositories() *schema.Resource {
 		Update: resourceGithubActionsOrganizationSecretRepositoriesCreateOrUpdate,
 		Delete: resourceGithubActionsOrganizationSecretRepositoriesDelete,
 		Importer: &schema.ResourceImporter{
-			State: schema.ImportStatePassthrough,
+			StateContext: schema.ImportStatePassthroughContext,
 		},
 
 		Schema: map[string]*schema.Schema{
 			"secret_name": {
-				Type:         schema.TypeString,
-				Required:     true,
-				ForceNew:     true,
-				ValidateFunc: validateSecretNameFunc,
+				Type:             schema.TypeString,
+				Required:         true,
+				ForceNew:         true,
+				Description:      "Name of the existing secret.",
+				ValidateDiagFunc: validateSecretNameFunc,
 			},
 			"selected_repository_ids": {
 				Type: schema.TypeSet,
 				Elem: &schema.Schema{
 					Type: schema.TypeInt,
 				},
-				Set:      schema.HashInt,
-				Required: true,
+				Set:         schema.HashInt,
+				Required:    true,
+				Description: "An array of repository ids that can access the organization secret.",
 			},
 		},
 	}
@@ -95,7 +97,9 @@ func resourceGithubActionsOrganizationSecretRepositoriesRead(d *schema.ResourceD
 		opt.Page = resp.NextPage
 	}
 
-	d.Set("selected_repository_ids", selectedRepositoryIDs)
+	if err = d.Set("selected_repository_ids", selectedRepositoryIDs); err != nil {
+		return err
+	}
 
 	return nil
 }

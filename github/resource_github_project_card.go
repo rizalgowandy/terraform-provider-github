@@ -2,13 +2,14 @@ package github
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"net/http"
 	"strconv"
 	"strings"
 
-	"github.com/google/go-github/v41/github"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/google/go-github/v66/github"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 func resourceGithubProjectCard() *schema.Resource {
@@ -22,21 +23,34 @@ func resourceGithubProjectCard() *schema.Resource {
 		},
 		Schema: map[string]*schema.Schema{
 			"column_id": {
-				Type:     schema.TypeString,
-				Required: true,
-				ForceNew: true,
+				Type:        schema.TypeString,
+				Required:    true,
+				ForceNew:    true,
+				Description: "The ID of the project column.",
 			},
 			"note": {
-				Type:     schema.TypeString,
-				Required: true,
+				Type:        schema.TypeString,
+				Optional:    true,
+				Description: "The note contents of the card. Markdown supported.",
+			},
+			"content_id": {
+				Type:        schema.TypeInt,
+				Optional:    true,
+				Description: "'github_issue.issue_id'.",
+			},
+			"content_type": {
+				Type:        schema.TypeString,
+				Optional:    true,
+				Description: "Must be either 'Issue' or 'PullRequest'.",
 			},
 			"etag": {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
 			"card_id": {
-				Type:     schema.TypeInt,
-				Computed: true,
+				Type:        schema.TypeInt,
+				Computed:    true,
+				Description: "The ID of the card.",
 			},
 		},
 	}
@@ -56,14 +70,31 @@ func resourceGithubProjectCardCreate(d *schema.ResourceData, meta interface{}) e
 
 	log.Printf("[DEBUG] Creating project card note in column ID: %d", columnID)
 	client := meta.(*Owner).v3client
-	options := github.ProjectCardOptions{Note: d.Get("note").(string)}
+	options := github.ProjectCardOptions{}
+
+	note := d.Get("note").(string)
+	if len(note) > 0 {
+		options.Note = note
+	} else {
+		contentID := d.Get("content_id").(int)
+		if contentID > 0 {
+			options.ContentID = int64(contentID)
+		}
+
+		options.ContentType = d.Get("content_type").(string)
+		if options.ContentType != "Issue" && options.ContentType != "PullRequest" {
+			return fmt.Errorf("content_type must be set to either Issue or PullRequest")
+		}
+	}
 	ctx := context.Background()
 	card, _, err := client.Projects.CreateProjectCard(ctx, columnID, &options)
 	if err != nil {
 		return err
 	}
 
-	d.Set("card_id", card.GetID())
+	if err = d.Set("card_id", card.GetID()); err != nil {
+		return err
+	}
 	d.SetId(card.GetNodeID())
 
 	return resourceGithubProjectCardRead(d, meta)
@@ -83,7 +114,7 @@ func resourceGithubProjectCardRead(d *schema.ResourceData, meta interface{}) err
 	if err != nil {
 		if err, ok := err.(*github.ErrorResponse); ok {
 			if err.Response.StatusCode == http.StatusNotFound {
-				log.Printf("[WARN] Removing project card %s from state because it no longer exists in GitHub", d.Id())
+				log.Printf("[INFO] Removing project card %s from state because it no longer exists in GitHub", d.Id())
 				d.SetId("")
 				return nil
 			}
@@ -98,9 +129,15 @@ func resourceGithubProjectCardRead(d *schema.ResourceData, meta interface{}) err
 		return unconvertibleIdErr(columnIDStr, err)
 	}
 
-	d.Set("note", card.GetNote())
-	d.Set("column_id", columnIDStr)
-	d.Set("card_id", card.GetID())
+	if err = d.Set("note", card.GetNote()); err != nil {
+		return err
+	}
+	if err = d.Set("column_id", columnIDStr); err != nil {
+		return err
+	}
+	if err = d.Set("card_id", card.GetID()); err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -110,8 +147,18 @@ func resourceGithubProjectCardUpdate(d *schema.ResourceData, meta interface{}) e
 	cardID := d.Get("card_id").(int)
 
 	log.Printf("[DEBUG] Updating project Card: %s", d.Id())
-	options := github.ProjectCardOptions{
-		Note: d.Get("note").(string),
+	options := github.ProjectCardOptions{}
+
+	note := d.Get("note").(string)
+	if len(note) > 0 {
+		options.Note = note
+	} else {
+		contentID := d.Get("content_id").(int)
+		if contentID > 0 {
+			options.ContentID = int64(contentID)
+		}
+
+		options.ContentType = d.Get("content_type").(string)
 	}
 	ctx := context.WithValue(context.Background(), ctxId, d.Id())
 	_, _, err := client.Projects.UpdateProjectCard(ctx, int64(cardID), &options)
@@ -153,7 +200,9 @@ func resourceGithubProjectCardImport(d *schema.ResourceData, meta interface{}) (
 	}
 
 	d.SetId(card.GetNodeID())
-	d.Set("card_id", cardID)
+	if err = d.Set("card_id", cardID); err != nil {
+		return []*schema.ResourceData{d}, err
+	}
 
 	return []*schema.ResourceData{d}, nil
 

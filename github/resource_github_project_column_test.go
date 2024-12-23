@@ -6,9 +6,9 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/google/go-github/v41/github"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/terraform"
+	"github.com/google/go-github/v66/github"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
 
 func TestAccGithubProjectColumn_basic(t *testing.T) {
@@ -69,7 +69,7 @@ func testAccGithubProjectColumnDestroy(s *terraform.State) error {
 		if err == nil {
 			if column != nil &&
 				column.GetID() == columnID {
-				return fmt.Errorf("Project column still exists")
+				return fmt.Errorf("project column still exists")
 			}
 		}
 		if res.StatusCode != 404 {
@@ -83,7 +83,7 @@ func testAccCheckGithubProjectColumnExists(n string, project *github.ProjectColu
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[n]
 		if !ok {
-			return fmt.Errorf("Not Found: %s", n)
+			return fmt.Errorf("not found: %s", n)
 		}
 
 		columnID, err := strconv.ParseInt(rs.Primary.ID, 10, 64)
