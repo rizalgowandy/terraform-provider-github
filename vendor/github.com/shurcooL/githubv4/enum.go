@@ -2,6 +2,15 @@
 
 package githubv4
 
+// ActorType represents the actor's type.
+type ActorType string
+
+// The actor's type.
+const (
+	ActorTypeUser ActorType = "USER" // Indicates a user actor.
+	ActorTypeTeam ActorType = "TEAM" // Indicates a team actor.
+)
+
 // AuditLogOrderField represents properties by which Audit Log connections can be ordered.
 type AuditLogOrderField string
 
@@ -34,6 +43,27 @@ const (
 	CheckConclusionStateSkipped        CheckConclusionState = "SKIPPED"         // The check suite or run was skipped.
 	CheckConclusionStateStartupFailure CheckConclusionState = "STARTUP_FAILURE" // The check suite or run has failed at startup.
 	CheckConclusionStateStale          CheckConclusionState = "STALE"           // The check suite or run was marked stale by GitHub. Only GitHub can use this conclusion.
+)
+
+// CheckRunState represents the possible states of a check run in a status rollup.
+type CheckRunState string
+
+// The possible states of a check run in a status rollup.
+const (
+	CheckRunStateActionRequired CheckRunState = "ACTION_REQUIRED" // The check run requires action.
+	CheckRunStateCancelled      CheckRunState = "CANCELLED"       // The check run has been cancelled.
+	CheckRunStateCompleted      CheckRunState = "COMPLETED"       // The check run has been completed.
+	CheckRunStateFailure        CheckRunState = "FAILURE"         // The check run has failed.
+	CheckRunStateInProgress     CheckRunState = "IN_PROGRESS"     // The check run is in progress.
+	CheckRunStateNeutral        CheckRunState = "NEUTRAL"         // The check run was neutral.
+	CheckRunStatePending        CheckRunState = "PENDING"         // The check run is in pending state.
+	CheckRunStateQueued         CheckRunState = "QUEUED"          // The check run has been queued.
+	CheckRunStateSkipped        CheckRunState = "SKIPPED"         // The check run was skipped.
+	CheckRunStateStale          CheckRunState = "STALE"           // The check run was marked stale by GitHub. Only GitHub can use this conclusion.
+	CheckRunStateStartupFailure CheckRunState = "STARTUP_FAILURE" // The check run has failed at startup.
+	CheckRunStateSuccess        CheckRunState = "SUCCESS"         // The check run has succeeded.
+	CheckRunStateTimedOut       CheckRunState = "TIMED_OUT"       // The check run has timed out.
+	CheckRunStateWaiting        CheckRunState = "WAITING"         // The check run is in waiting state.
 )
 
 // CheckRunType represents the possible types of check runs.
@@ -106,6 +136,17 @@ const (
 	CommitContributionOrderFieldCommitCount CommitContributionOrderField = "COMMIT_COUNT" // Order commit contributions by how many commits they represent.
 )
 
+// ComparisonStatus represents the status of a git comparison between two refs.
+type ComparisonStatus string
+
+// The status of a git comparison between two refs.
+const (
+	ComparisonStatusDiverged  ComparisonStatus = "DIVERGED"  // The head ref is both ahead and behind of the base ref, indicating git history has diverged.
+	ComparisonStatusAhead     ComparisonStatus = "AHEAD"     // The head ref is ahead of the base ref.
+	ComparisonStatusBehind    ComparisonStatus = "BEHIND"    // The head ref is behind the base ref.
+	ComparisonStatusIdentical ComparisonStatus = "IDENTICAL" // The head ref and base ref are identical.
+)
+
 // ContributionLevel represents varying levels of contributions from none to many.
 type ContributionLevel string
 
@@ -118,15 +159,32 @@ const (
 	ContributionLevelFourthQuartile ContributionLevel = "FOURTH_QUARTILE" // Highest 25% of days of contributions. More contributions than the third quartile.
 )
 
-// DefaultRepositoryPermissionField represents the possible default permissions for repositories.
+// DefaultRepositoryPermissionField represents the possible base permissions for repositories.
 type DefaultRepositoryPermissionField string
 
-// The possible default permissions for repositories.
+// The possible base permissions for repositories.
 const (
 	DefaultRepositoryPermissionFieldNone  DefaultRepositoryPermissionField = "NONE"  // No access.
 	DefaultRepositoryPermissionFieldRead  DefaultRepositoryPermissionField = "READ"  // Can read repos by default.
 	DefaultRepositoryPermissionFieldWrite DefaultRepositoryPermissionField = "WRITE" // Can read and write repos by default.
 	DefaultRepositoryPermissionFieldAdmin DefaultRepositoryPermissionField = "ADMIN" // Can read, write, and administrate repos by default.
+)
+
+// DependencyGraphEcosystem represents the possible ecosystems of a dependency graph package.
+type DependencyGraphEcosystem string
+
+// The possible ecosystems of a dependency graph package.
+const (
+	DependencyGraphEcosystemRubygems DependencyGraphEcosystem = "RUBYGEMS" // Ruby gems hosted at RubyGems.org.
+	DependencyGraphEcosystemNpm      DependencyGraphEcosystem = "NPM"      // JavaScript packages hosted at npmjs.com.
+	DependencyGraphEcosystemPip      DependencyGraphEcosystem = "PIP"      // Python packages hosted at PyPI.org.
+	DependencyGraphEcosystemMaven    DependencyGraphEcosystem = "MAVEN"    // Java artifacts hosted at the Maven central repository.
+	DependencyGraphEcosystemNuget    DependencyGraphEcosystem = "NUGET"    // .NET packages hosted at the NuGet Gallery.
+	DependencyGraphEcosystemComposer DependencyGraphEcosystem = "COMPOSER" // PHP packages hosted at packagist.org.
+	DependencyGraphEcosystemGo       DependencyGraphEcosystem = "GO"       // Go modules.
+	DependencyGraphEcosystemActions  DependencyGraphEcosystem = "ACTIONS"  // GitHub Actions.
+	DependencyGraphEcosystemRust     DependencyGraphEcosystem = "RUST"     // Rust crates.
+	DependencyGraphEcosystemPub      DependencyGraphEcosystem = "PUB"      // Dart packages hosted at pub.dev.
 )
 
 // DeploymentOrderField represents properties by which deployment connections can be ordered.
@@ -205,6 +263,27 @@ const (
 	DiscussionOrderFieldUpdatedAt DiscussionOrderField = "UPDATED_AT" // Order discussions by most recent modification time.
 )
 
+// DiscussionPollOptionOrderField represents properties by which discussion poll option connections can be ordered.
+type DiscussionPollOptionOrderField string
+
+// Properties by which discussion poll option connections can be ordered.
+const (
+	DiscussionPollOptionOrderFieldAuthoredOrder DiscussionPollOptionOrderField = "AUTHORED_ORDER" // Order poll options by the order that the poll author specified when creating the poll.
+	DiscussionPollOptionOrderFieldVoteCount     DiscussionPollOptionOrderField = "VOTE_COUNT"     // Order poll options by the number of votes it has.
+)
+
+// DismissReason represents the possible reasons that a Dependabot alert was dismissed.
+type DismissReason string
+
+// The possible reasons that a Dependabot alert was dismissed.
+const (
+	DismissReasonFixStarted    DismissReason = "FIX_STARTED"    // A fix has already been started.
+	DismissReasonNoBandwidth   DismissReason = "NO_BANDWIDTH"   // No bandwidth to fix this.
+	DismissReasonTolerableRisk DismissReason = "TOLERABLE_RISK" // Risk is tolerable to this project.
+	DismissReasonInaccurate    DismissReason = "INACCURATE"     // This alert is inaccurate or incorrect.
+	DismissReasonNotUsed       DismissReason = "NOT_USED"       // Vulnerable code is not actually used.
+)
+
 // EnterpriseAdministratorInvitationOrderField represents properties by which enterprise administrator invitation connections can be ordered.
 type EnterpriseAdministratorInvitationOrderField string
 
@@ -222,12 +301,25 @@ const (
 	EnterpriseAdministratorRoleBillingManager EnterpriseAdministratorRole = "BILLING_MANAGER" // Represents a billing manager of the enterprise account.
 )
 
-// EnterpriseDefaultRepositoryPermissionSettingValue represents the possible values for the enterprise default repository permission setting.
+// EnterpriseAllowPrivateRepositoryForkingPolicyValue represents the possible values for the enterprise allow private repository forking policy value.
+type EnterpriseAllowPrivateRepositoryForkingPolicyValue string
+
+// The possible values for the enterprise allow private repository forking policy value.
+const (
+	EnterpriseAllowPrivateRepositoryForkingPolicyValueEnterpriseOrganizations             EnterpriseAllowPrivateRepositoryForkingPolicyValue = "ENTERPRISE_ORGANIZATIONS"               // Members can fork a repository to an organization within this enterprise.
+	EnterpriseAllowPrivateRepositoryForkingPolicyValueSameOrganization                    EnterpriseAllowPrivateRepositoryForkingPolicyValue = "SAME_ORGANIZATION"                      // Members can fork a repository only within the same organization (intra-org).
+	EnterpriseAllowPrivateRepositoryForkingPolicyValueSameOrganizationUserAccounts        EnterpriseAllowPrivateRepositoryForkingPolicyValue = "SAME_ORGANIZATION_USER_ACCOUNTS"        // Members can fork a repository to their user account or within the same organization.
+	EnterpriseAllowPrivateRepositoryForkingPolicyValueEnterpriseOrganizationsUserAccounts EnterpriseAllowPrivateRepositoryForkingPolicyValue = "ENTERPRISE_ORGANIZATIONS_USER_ACCOUNTS" // Members can fork a repository to their enterprise-managed user account or an organization inside this enterprise.
+	EnterpriseAllowPrivateRepositoryForkingPolicyValueUserAccounts                        EnterpriseAllowPrivateRepositoryForkingPolicyValue = "USER_ACCOUNTS"                          // Members can fork a repository to their user account.
+	EnterpriseAllowPrivateRepositoryForkingPolicyValueEverywhere                          EnterpriseAllowPrivateRepositoryForkingPolicyValue = "EVERYWHERE"                             // Members can fork a repository to their user account or an organization, either inside or outside of this enterprise.
+)
+
+// EnterpriseDefaultRepositoryPermissionSettingValue represents the possible values for the enterprise base repository permission setting.
 type EnterpriseDefaultRepositoryPermissionSettingValue string
 
-// The possible values for the enterprise default repository permission setting.
+// The possible values for the enterprise base repository permission setting.
 const (
-	EnterpriseDefaultRepositoryPermissionSettingValueNoPolicy EnterpriseDefaultRepositoryPermissionSettingValue = "NO_POLICY" // Organizations in the enterprise choose default repository permissions for their members.
+	EnterpriseDefaultRepositoryPermissionSettingValueNoPolicy EnterpriseDefaultRepositoryPermissionSettingValue = "NO_POLICY" // Organizations in the enterprise choose base repository permissions for their members.
 	EnterpriseDefaultRepositoryPermissionSettingValueAdmin    EnterpriseDefaultRepositoryPermissionSettingValue = "ADMIN"     // Organization members will be able to clone, pull, push, and add new collaborators to all organization repositories.
 	EnterpriseDefaultRepositoryPermissionSettingValueWrite    EnterpriseDefaultRepositoryPermissionSettingValue = "WRITE"     // Organization members will be able to clone, pull, and push all organization repositories.
 	EnterpriseDefaultRepositoryPermissionSettingValueRead     EnterpriseDefaultRepositoryPermissionSettingValue = "READ"      // Organization members will be able to clone and pull all organization repositories.
@@ -333,8 +425,9 @@ type EnterpriseUserAccountMembershipRole string
 
 // The possible roles for enterprise membership.
 const (
-	EnterpriseUserAccountMembershipRoleMember EnterpriseUserAccountMembershipRole = "MEMBER" // The user is a member of the enterprise membership.
-	EnterpriseUserAccountMembershipRoleOwner  EnterpriseUserAccountMembershipRole = "OWNER"  // The user is an owner of the enterprise membership.
+	EnterpriseUserAccountMembershipRoleMember       EnterpriseUserAccountMembershipRole = "MEMBER"       // The user is a member of an organization in the enterprise.
+	EnterpriseUserAccountMembershipRoleOwner        EnterpriseUserAccountMembershipRole = "OWNER"        // The user is an owner of an organization in the enterprise.
+	EnterpriseUserAccountMembershipRoleUnaffiliated EnterpriseUserAccountMembershipRole = "UNAFFILIATED" // The user is not an owner of the enterprise, and not a member or owner of any organizations in the enterprise; only for EMU-enabled enterprises.
 )
 
 // EnterpriseUserDeployment represents the possible GitHub Enterprise deployments where this user can exist.
@@ -368,8 +461,9 @@ const (
 	FundingPlatformTidelift        FundingPlatform = "TIDELIFT"         // Tidelift funding platform.
 	FundingPlatformCommunityBridge FundingPlatform = "COMMUNITY_BRIDGE" // Community Bridge funding platform.
 	FundingPlatformLiberapay       FundingPlatform = "LIBERAPAY"        // Liberapay funding platform.
-	FundingPlatformIssuehunt       FundingPlatform = "ISSUEHUNT"        // IssueHunt funding platform.
+	FundingPlatformIssueHunt       FundingPlatform = "ISSUEHUNT"        // IssueHunt funding platform.
 	FundingPlatformOtechie         FundingPlatform = "OTECHIE"          // Otechie funding platform.
+	FundingPlatformLFXCrowdfunding FundingPlatform = "LFX_CROWDFUNDING" // LFX Crowdfunding funding platform.
 	FundingPlatformCustom          FundingPlatform = "CUSTOM"           // Custom funding platform.
 )
 
@@ -454,6 +548,15 @@ const (
 	IpAllowListForInstalledAppsEnabledSettingValueDisabled IpAllowListForInstalledAppsEnabledSettingValue = "DISABLED" // The setting is disabled for the owner.
 )
 
+// IssueClosedStateReason represents the possible state reasons of a closed issue.
+type IssueClosedStateReason string
+
+// The possible state reasons of a closed issue.
+const (
+	IssueClosedStateReasonCompleted  IssueClosedStateReason = "COMPLETED"   // An issue that has been closed as completed.
+	IssueClosedStateReasonNotPlanned IssueClosedStateReason = "NOT_PLANNED" // An issue that has been closed as not planned.
+)
+
 // IssueCommentOrderField represents properties by which issue comment connections can be ordered.
 type IssueCommentOrderField string
 
@@ -481,6 +584,16 @@ const (
 	IssueStateClosed IssueState = "CLOSED" // An issue that has been closed.
 )
 
+// IssueStateReason represents the possible state reasons of an issue.
+type IssueStateReason string
+
+// The possible state reasons of an issue.
+const (
+	IssueStateReasonReopened   IssueStateReason = "REOPENED"    // An issue that has been reopened.
+	IssueStateReasonNotPlanned IssueStateReason = "NOT_PLANNED" // An issue that has been closed as not planned.
+	IssueStateReasonCompleted  IssueStateReason = "COMPLETED"   // An issue that has been closed as completed.
+)
+
 // IssueTimelineItemsItemType represents the possible item types found in a timeline.
 type IssueTimelineItemsItemType string
 
@@ -494,6 +607,7 @@ const (
 	IssueTimelineItemsItemTypeCommentDeletedEvent        IssueTimelineItemsItemType = "COMMENT_DELETED_EVENT"          // Represents a 'comment_deleted' event on a given issue or pull request.
 	IssueTimelineItemsItemTypeConnectedEvent             IssueTimelineItemsItemType = "CONNECTED_EVENT"                // Represents a 'connected' event on a given issue or pull request.
 	IssueTimelineItemsItemTypeConvertedNoteToIssueEvent  IssueTimelineItemsItemType = "CONVERTED_NOTE_TO_ISSUE_EVENT"  // Represents a 'converted_note_to_issue' event on a given issue or pull request.
+	IssueTimelineItemsItemTypeConvertedToDiscussionEvent IssueTimelineItemsItemType = "CONVERTED_TO_DISCUSSION_EVENT"  // Represents a 'converted_to_discussion' event on a given issue.
 	IssueTimelineItemsItemTypeDemilestonedEvent          IssueTimelineItemsItemType = "DEMILESTONED_EVENT"             // Represents a 'demilestoned' event on a given issue or pull request.
 	IssueTimelineItemsItemTypeDisconnectedEvent          IssueTimelineItemsItemType = "DISCONNECTED_EVENT"             // Represents a 'disconnected' event on a given issue or pull request.
 	IssueTimelineItemsItemTypeLabeledEvent               IssueTimelineItemsItemType = "LABELED_EVENT"                  // Represents a 'labeled' event on a given issue or pull request.
@@ -546,6 +660,25 @@ const (
 	LockReasonSpam      LockReason = "SPAM"       // The issue or pull request was locked because the conversation was spam.
 )
 
+// MergeCommitMessage represents the possible default commit messages for merges.
+type MergeCommitMessage string
+
+// The possible default commit messages for merges.
+const (
+	MergeCommitMessagePrTitle MergeCommitMessage = "PR_TITLE" // Default to the pull request's title.
+	MergeCommitMessagePrBody  MergeCommitMessage = "PR_BODY"  // Default to the pull request's body.
+	MergeCommitMessageBlank   MergeCommitMessage = "BLANK"    // Default to a blank commit message.
+)
+
+// MergeCommitTitle represents the possible default commit titles for merges.
+type MergeCommitTitle string
+
+// The possible default commit titles for merges.
+const (
+	MergeCommitTitlePrTitle      MergeCommitTitle = "PR_TITLE"      // Default to the pull request's title.
+	MergeCommitTitleMergeMessage MergeCommitTitle = "MERGE_MESSAGE" // Default to the classic title for a merge message (e.g., Merge pull request #123 from branch-name).
+)
+
 // MergeableState represents whether or not a PullRequest can be merged.
 type MergeableState string
 
@@ -554,6 +687,30 @@ const (
 	MergeableStateMergeable   MergeableState = "MERGEABLE"   // The pull request can be merged.
 	MergeableStateConflicting MergeableState = "CONFLICTING" // The pull request cannot be merged due to merge conflicts.
 	MergeableStateUnknown     MergeableState = "UNKNOWN"     // The mergeability of the pull request is still being calculated.
+)
+
+// MigrationSourceType represents represents the different Octoshift migration sources.
+type MigrationSourceType string
+
+// Represents the different Octoshift migration sources.
+const (
+	MigrationSourceTypeAzureDevOps     MigrationSourceType = "AZURE_DEVOPS"     // An Azure DevOps migration source.
+	MigrationSourceTypeBitbucketServer MigrationSourceType = "BITBUCKET_SERVER" // A Bitbucket Server migration source.
+	MigrationSourceTypeGitHubArchive   MigrationSourceType = "GITHUB_ARCHIVE"   // A GitHub Migration API source.
+)
+
+// MigrationState represents the Octoshift migration state.
+type MigrationState string
+
+// The Octoshift migration state.
+const (
+	MigrationStateNotStarted        MigrationState = "NOT_STARTED"        // The Octoshift migration has not started.
+	MigrationStateQueued            MigrationState = "QUEUED"             // The Octoshift migration has been queued.
+	MigrationStateInProgress        MigrationState = "IN_PROGRESS"        // The Octoshift migration is in progress.
+	MigrationStateSucceeded         MigrationState = "SUCCEEDED"          // The Octoshift migration has succeeded.
+	MigrationStateFailed            MigrationState = "FAILED"             // The Octoshift migration has failed.
+	MigrationStatePendingValidation MigrationState = "PENDING_VALIDATION" // The Octoshift migration needs to have its credentials validated.
+	MigrationStateFailedValidation  MigrationState = "FAILED_VALIDATION"  // The Octoshift migration has invalid credentials.
 )
 
 // MilestoneOrderField represents properties by which milestone connections can be ordered.
@@ -583,6 +740,14 @@ type NotificationRestrictionSettingValue string
 const (
 	NotificationRestrictionSettingValueEnabled  NotificationRestrictionSettingValue = "ENABLED"  // The setting is enabled for the owner.
 	NotificationRestrictionSettingValueDisabled NotificationRestrictionSettingValue = "DISABLED" // The setting is disabled for the owner.
+)
+
+// OIDCProviderType represents the OIDC identity provider type.
+type OIDCProviderType string
+
+// The OIDC identity provider type.
+const (
+	OIDCProviderTypeAad OIDCProviderType = "AAD" // Azure Active Directory.
 )
 
 // OauthApplicationCreateAuditEntryState represents the state of an OAuth Application when it was created.
@@ -639,6 +804,14 @@ const (
 	OrgCreateAuditEntryBillingPlanTieredPerSeat OrgCreateAuditEntryBillingPlan = "TIERED_PER_SEAT" // Tiered Per Seat Plan.
 )
 
+// OrgEnterpriseOwnerOrderField represents properties by which enterprise owners can be ordered.
+type OrgEnterpriseOwnerOrderField string
+
+// Properties by which enterprise owners can be ordered.
+const (
+	OrgEnterpriseOwnerOrderFieldLogin OrgEnterpriseOwnerOrderField = "LOGIN" // Order enterprise owners by login.
+)
+
 // OrgRemoveBillingManagerAuditEntryReason represents the reason a billing manager was removed from an Organization.
 type OrgRemoveBillingManagerAuditEntryReason string
 
@@ -654,6 +827,7 @@ type OrgRemoveMemberAuditEntryMembershipType string
 
 // The type of membership a user has with an Organization.
 const (
+	OrgRemoveMemberAuditEntryMembershipTypeSuspended           OrgRemoveMemberAuditEntryMembershipType = "SUSPENDED"            // A suspended member.
 	OrgRemoveMemberAuditEntryMembershipTypeDirectMember        OrgRemoveMemberAuditEntryMembershipType = "DIRECT_MEMBER"        // A direct member is a user that is a member of the Organization.
 	OrgRemoveMemberAuditEntryMembershipTypeAdmin               OrgRemoveMemberAuditEntryMembershipType = "ADMIN"                // Organization administrators have full access and can change several settings, including the names of repositories that belong to the Organization and Owners team membership. In addition, organization admins can delete the organization and all of its repositories.
 	OrgRemoveMemberAuditEntryMembershipTypeBillingManager      OrgRemoveMemberAuditEntryMembershipType = "BILLING_MANAGER"      // A billing manager is a user who manages the billing settings for the Organization, such as updating payment information.
@@ -763,6 +937,7 @@ type OrganizationMembersCanCreateRepositoriesSettingValue string
 const (
 	OrganizationMembersCanCreateRepositoriesSettingValueAll      OrganizationMembersCanCreateRepositoriesSettingValue = "ALL"      // Members will be able to create public and private repositories.
 	OrganizationMembersCanCreateRepositoriesSettingValuePrivate  OrganizationMembersCanCreateRepositoriesSettingValue = "PRIVATE"  // Members will be able to create only private repositories.
+	OrganizationMembersCanCreateRepositoriesSettingValueInternal OrganizationMembersCanCreateRepositoriesSettingValue = "INTERNAL" // Members will be able to create only internal repositories.
 	OrganizationMembersCanCreateRepositoriesSettingValueDisabled OrganizationMembersCanCreateRepositoriesSettingValue = "DISABLED" // Members will not be able to create public or private repositories.
 )
 
@@ -811,6 +986,19 @@ type PackageVersionOrderField string
 // Properties by which package version connections can be ordered.
 const (
 	PackageVersionOrderFieldCreatedAt PackageVersionOrderField = "CREATED_AT" // Order package versions by creation time.
+)
+
+// PatchStatus represents the possible types of patch statuses.
+type PatchStatus string
+
+// The possible types of patch statuses.
+const (
+	PatchStatusAdded    PatchStatus = "ADDED"    // The file was added. Git status 'A'.
+	PatchStatusDeleted  PatchStatus = "DELETED"  // The file was deleted. Git status 'D'.
+	PatchStatusRenamed  PatchStatus = "RENAMED"  // The file was renamed. Git status 'R'.
+	PatchStatusCopied   PatchStatus = "COPIED"   // The file was copied. Git status 'C'.
+	PatchStatusModified PatchStatus = "MODIFIED" // The file's contents were changed. Git status 'M'.
+	PatchStatusChanged  PatchStatus = "CHANGED"  // The file's type was changed. Git status 'T'.
 )
 
 // PinnableItemType represents represents items that can be pinned to a profile page or dashboard.
@@ -882,6 +1070,49 @@ const (
 	ProjectColumnPurposeDone       ProjectColumnPurpose = "DONE"        // The column contains cards which are complete.
 )
 
+// ProjectItemType represents the type of a project item.
+type ProjectItemType string
+
+// The type of a project item.
+const (
+	ProjectItemTypeIssue       ProjectItemType = "ISSUE"        // Issue.
+	ProjectItemTypePullRequest ProjectItemType = "PULL_REQUEST" // Pull Request.
+	ProjectItemTypeDraftIssue  ProjectItemType = "DRAFT_ISSUE"  // Draft Issue.
+	ProjectItemTypeRedacted    ProjectItemType = "REDACTED"     // Redacted Item.
+)
+
+// ProjectNextFieldType represents the type of a project next field.
+type ProjectNextFieldType string
+
+// The type of a project next field.
+const (
+	ProjectNextFieldTypeAssignees          ProjectNextFieldType = "ASSIGNEES"            // Assignees.
+	ProjectNextFieldTypeLinkedPullRequests ProjectNextFieldType = "LINKED_PULL_REQUESTS" // Linked Pull Requests.
+	ProjectNextFieldTypeReviewers          ProjectNextFieldType = "REVIEWERS"            // Reviewers.
+	ProjectNextFieldTypeLabels             ProjectNextFieldType = "LABELS"               // Labels.
+	ProjectNextFieldTypeMilestone          ProjectNextFieldType = "MILESTONE"            // Milestone.
+	ProjectNextFieldTypeRepository         ProjectNextFieldType = "REPOSITORY"           // Repository.
+	ProjectNextFieldTypeTitle              ProjectNextFieldType = "TITLE"                // Title.
+	ProjectNextFieldTypeText               ProjectNextFieldType = "TEXT"                 // Text.
+	ProjectNextFieldTypeSingleSelect       ProjectNextFieldType = "SINGLE_SELECT"        // Single Select.
+	ProjectNextFieldTypeNumber             ProjectNextFieldType = "NUMBER"               // Number.
+	ProjectNextFieldTypeDate               ProjectNextFieldType = "DATE"                 // Date.
+	ProjectNextFieldTypeIteration          ProjectNextFieldType = "ITERATION"            // Iteration.
+	ProjectNextFieldTypeTracks             ProjectNextFieldType = "TRACKS"               // Tracks.
+	ProjectNextFieldTypeTrackedBy          ProjectNextFieldType = "TRACKED_BY"           // Tracked by.
+)
+
+// ProjectNextOrderField represents properties by which the return project can be ordered.
+type ProjectNextOrderField string
+
+// Properties by which the return project can be ordered.
+const (
+	ProjectNextOrderFieldTitle     ProjectNextOrderField = "TITLE"      // The project's title.
+	ProjectNextOrderFieldNumber    ProjectNextOrderField = "NUMBER"     // The project's number.
+	ProjectNextOrderFieldUpdatedAt ProjectNextOrderField = "UPDATED_AT" // The project's date and time of update.
+	ProjectNextOrderFieldCreatedAt ProjectNextOrderField = "CREATED_AT" // The project's date and time of creation.
+)
+
 // ProjectOrderField represents properties by which project connections can be ordered.
 type ProjectOrderField string
 
@@ -910,6 +1141,112 @@ const (
 	ProjectTemplateAutomatedKanbanV2      ProjectTemplate = "AUTOMATED_KANBAN_V2"      // Create a board with v2 triggers to automatically move cards across To do, In progress and Done columns.
 	ProjectTemplateAutomatedReviewsKanban ProjectTemplate = "AUTOMATED_REVIEWS_KANBAN" // Create a board with triggers to automatically move cards across columns with review automation.
 	ProjectTemplateBugTriage              ProjectTemplate = "BUG_TRIAGE"               // Create a board to triage and prioritize bugs with To do, priority, and Done columns.
+)
+
+// ProjectV2FieldOrderField represents properties by which project v2 field connections can be ordered.
+type ProjectV2FieldOrderField string
+
+// Properties by which project v2 field connections can be ordered.
+const (
+	ProjectV2FieldOrderFieldPosition  ProjectV2FieldOrderField = "POSITION"   // Order project v2 fields by position.
+	ProjectV2FieldOrderFieldCreatedAt ProjectV2FieldOrderField = "CREATED_AT" // Order project v2 fields by creation time.
+	ProjectV2FieldOrderFieldName      ProjectV2FieldOrderField = "NAME"       // Order project v2 fields by name.
+)
+
+// ProjectV2FieldType represents the type of a project field.
+type ProjectV2FieldType string
+
+// The type of a project field.
+const (
+	ProjectV2FieldTypeAssignees          ProjectV2FieldType = "ASSIGNEES"            // Assignees.
+	ProjectV2FieldTypeLinkedPullRequests ProjectV2FieldType = "LINKED_PULL_REQUESTS" // Linked Pull Requests.
+	ProjectV2FieldTypeReviewers          ProjectV2FieldType = "REVIEWERS"            // Reviewers.
+	ProjectV2FieldTypeLabels             ProjectV2FieldType = "LABELS"               // Labels.
+	ProjectV2FieldTypeMilestone          ProjectV2FieldType = "MILESTONE"            // Milestone.
+	ProjectV2FieldTypeRepository         ProjectV2FieldType = "REPOSITORY"           // Repository.
+	ProjectV2FieldTypeTitle              ProjectV2FieldType = "TITLE"                // Title.
+	ProjectV2FieldTypeText               ProjectV2FieldType = "TEXT"                 // Text.
+	ProjectV2FieldTypeSingleSelect       ProjectV2FieldType = "SINGLE_SELECT"        // Single Select.
+	ProjectV2FieldTypeNumber             ProjectV2FieldType = "NUMBER"               // Number.
+	ProjectV2FieldTypeDate               ProjectV2FieldType = "DATE"                 // Date.
+	ProjectV2FieldTypeIteration          ProjectV2FieldType = "ITERATION"            // Iteration.
+	ProjectV2FieldTypeTracks             ProjectV2FieldType = "TRACKS"               // Tracks.
+	ProjectV2FieldTypeTrackedBy          ProjectV2FieldType = "TRACKED_BY"           // Tracked by.
+)
+
+// ProjectV2ItemFieldValueOrderField represents properties by which project v2 item field value connections can be ordered.
+type ProjectV2ItemFieldValueOrderField string
+
+// Properties by which project v2 item field value connections can be ordered.
+const (
+	ProjectV2ItemFieldValueOrderFieldPosition ProjectV2ItemFieldValueOrderField = "POSITION" // Order project v2 item field values by the their position in the project.
+)
+
+// ProjectV2ItemOrderField represents properties by which project v2 item connections can be ordered.
+type ProjectV2ItemOrderField string
+
+// Properties by which project v2 item connections can be ordered.
+const (
+	ProjectV2ItemOrderFieldPosition ProjectV2ItemOrderField = "POSITION" // Order project v2 items by the their position in the project.
+)
+
+// ProjectV2ItemType represents the type of a project item.
+type ProjectV2ItemType string
+
+// The type of a project item.
+const (
+	ProjectV2ItemTypeIssue       ProjectV2ItemType = "ISSUE"        // Issue.
+	ProjectV2ItemTypePullRequest ProjectV2ItemType = "PULL_REQUEST" // Pull Request.
+	ProjectV2ItemTypeDraftIssue  ProjectV2ItemType = "DRAFT_ISSUE"  // Draft Issue.
+	ProjectV2ItemTypeRedacted    ProjectV2ItemType = "REDACTED"     // Redacted Item.
+)
+
+// ProjectV2OrderField represents properties by which projects can be ordered.
+type ProjectV2OrderField string
+
+// Properties by which projects can be ordered.
+const (
+	ProjectV2OrderFieldTitle     ProjectV2OrderField = "TITLE"      // The project's title.
+	ProjectV2OrderFieldNumber    ProjectV2OrderField = "NUMBER"     // The project's number.
+	ProjectV2OrderFieldUpdatedAt ProjectV2OrderField = "UPDATED_AT" // The project's date and time of update.
+	ProjectV2OrderFieldCreatedAt ProjectV2OrderField = "CREATED_AT" // The project's date and time of creation.
+)
+
+// ProjectV2State represents the possible states of a project v2.
+type ProjectV2State string
+
+// The possible states of a project v2.
+const (
+	ProjectV2StateOpen   ProjectV2State = "OPEN"   // A project v2 that is still open.
+	ProjectV2StateClosed ProjectV2State = "CLOSED" // A project v2 that has been closed.
+)
+
+// ProjectV2ViewLayout represents the layout of a project v2 view.
+type ProjectV2ViewLayout string
+
+// The layout of a project v2 view.
+const (
+	ProjectV2ViewLayoutBoardLayout ProjectV2ViewLayout = "BOARD_LAYOUT" // Board layout.
+	ProjectV2ViewLayoutTableLayout ProjectV2ViewLayout = "TABLE_LAYOUT" // Table layout.
+)
+
+// ProjectV2ViewOrderField represents properties by which project v2 view connections can be ordered.
+type ProjectV2ViewOrderField string
+
+// Properties by which project v2 view connections can be ordered.
+const (
+	ProjectV2ViewOrderFieldPosition  ProjectV2ViewOrderField = "POSITION"   // Order project v2 views by position.
+	ProjectV2ViewOrderFieldCreatedAt ProjectV2ViewOrderField = "CREATED_AT" // Order project v2 views by creation time.
+	ProjectV2ViewOrderFieldName      ProjectV2ViewOrderField = "NAME"       // Order project v2 views by name.
+)
+
+// ProjectViewLayout represents the layout of a project view.
+type ProjectViewLayout string
+
+// The layout of a project view.
+const (
+	ProjectViewLayoutBoardLayout ProjectViewLayout = "BOARD_LAYOUT" // Board layout.
+	ProjectViewLayoutTableLayout ProjectViewLayout = "TABLE_LAYOUT" // Table layout.
 )
 
 // PullRequestMergeMethod represents represents available types of methods to use when merging a pull request.
@@ -1013,6 +1350,8 @@ const (
 	PullRequestTimelineItemsItemTypeReviewRequestRemovedEvent         PullRequestTimelineItemsItemType = "REVIEW_REQUEST_REMOVED_EVENT"          // Represents an 'review_request_removed' event on a given pull request.
 	PullRequestTimelineItemsItemTypeReadyForReviewEvent               PullRequestTimelineItemsItemType = "READY_FOR_REVIEW_EVENT"                // Represents a 'ready_for_review' event on a given pull request.
 	PullRequestTimelineItemsItemTypeConvertToDraftEvent               PullRequestTimelineItemsItemType = "CONVERT_TO_DRAFT_EVENT"                // Represents a 'convert_to_draft' event on a given pull request.
+	PullRequestTimelineItemsItemTypeAddedToMergeQueueEvent            PullRequestTimelineItemsItemType = "ADDED_TO_MERGE_QUEUE_EVENT"            // Represents an 'added_to_merge_queue' event on a given pull request.
+	PullRequestTimelineItemsItemTypeRemovedFromMergeQueueEvent        PullRequestTimelineItemsItemType = "REMOVED_FROM_MERGE_QUEUE_EVENT"        // Represents a 'removed_from_merge_queue' event on a given pull request.
 	PullRequestTimelineItemsItemTypeIssueComment                      PullRequestTimelineItemsItemType = "ISSUE_COMMENT"                         // Represents a comment on an Issue.
 	PullRequestTimelineItemsItemTypeCrossReferencedEvent              PullRequestTimelineItemsItemType = "CROSS_REFERENCED_EVENT"                // Represents a mention made by one issue or pull request to another.
 	PullRequestTimelineItemsItemTypeAddedToProjectEvent               PullRequestTimelineItemsItemType = "ADDED_TO_PROJECT_EVENT"                // Represents a 'added_to_project' event on a given issue or pull request.
@@ -1021,6 +1360,7 @@ const (
 	PullRequestTimelineItemsItemTypeCommentDeletedEvent               PullRequestTimelineItemsItemType = "COMMENT_DELETED_EVENT"                 // Represents a 'comment_deleted' event on a given issue or pull request.
 	PullRequestTimelineItemsItemTypeConnectedEvent                    PullRequestTimelineItemsItemType = "CONNECTED_EVENT"                       // Represents a 'connected' event on a given issue or pull request.
 	PullRequestTimelineItemsItemTypeConvertedNoteToIssueEvent         PullRequestTimelineItemsItemType = "CONVERTED_NOTE_TO_ISSUE_EVENT"         // Represents a 'converted_note_to_issue' event on a given issue or pull request.
+	PullRequestTimelineItemsItemTypeConvertedToDiscussionEvent        PullRequestTimelineItemsItemType = "CONVERTED_TO_DISCUSSION_EVENT"         // Represents a 'converted_to_discussion' event on a given issue.
 	PullRequestTimelineItemsItemTypeDemilestonedEvent                 PullRequestTimelineItemsItemType = "DEMILESTONED_EVENT"                    // Represents a 'demilestoned' event on a given issue or pull request.
 	PullRequestTimelineItemsItemTypeDisconnectedEvent                 PullRequestTimelineItemsItemType = "DISCONNECTED_EVENT"                    // Represents a 'disconnected' event on a given issue or pull request.
 	PullRequestTimelineItemsItemTypeLabeledEvent                      PullRequestTimelineItemsItemType = "LABELED_EVENT"                         // Represents a 'labeled' event on a given issue or pull request.
@@ -1238,8 +1578,7 @@ type RepositoryInvitationOrderField string
 
 // Properties by which repository invitation connections can be ordered.
 const (
-	RepositoryInvitationOrderFieldCreatedAt    RepositoryInvitationOrderField = "CREATED_AT"    // Order repository invitations by creation time.
-	RepositoryInvitationOrderFieldInviteeLogin RepositoryInvitationOrderField = "INVITEE_LOGIN" // Order repository invitations by invitee login.
+	RepositoryInvitationOrderFieldCreatedAt RepositoryInvitationOrderField = "CREATED_AT" // Order repository invitations by creation time.
 )
 
 // RepositoryLockReason represents the possible reasons a given repository could be in a locked state.
@@ -1251,6 +1590,23 @@ const (
 	RepositoryLockReasonBilling   RepositoryLockReason = "BILLING"   // The repository is locked due to a billing related reason.
 	RepositoryLockReasonRename    RepositoryLockReason = "RENAME"    // The repository is locked due to a rename.
 	RepositoryLockReasonMigrating RepositoryLockReason = "MIGRATING" // The repository is locked due to a migration.
+)
+
+// RepositoryMigrationOrderDirection represents possible directions in which to order a list of repository migrations when provided an `orderBy` argument.
+type RepositoryMigrationOrderDirection string
+
+// Possible directions in which to order a list of repository migrations when provided an `orderBy` argument.
+const (
+	RepositoryMigrationOrderDirectionAsc  RepositoryMigrationOrderDirection = "ASC"  // Specifies an ascending order for a given `orderBy` argument.
+	RepositoryMigrationOrderDirectionDesc RepositoryMigrationOrderDirection = "DESC" // Specifies a descending order for a given `orderBy` argument.
+)
+
+// RepositoryMigrationOrderField represents properties by which repository migrations can be ordered.
+type RepositoryMigrationOrderField string
+
+// Properties by which repository migrations can be ordered.
+const (
+	RepositoryMigrationOrderFieldCreatedAt RepositoryMigrationOrderField = "CREATED_AT" // Order mannequins why when they were created.
 )
 
 // RepositoryOrderField represents properties by which repository connections can be ordered.
@@ -1296,6 +1652,25 @@ const (
 	RepositoryVisibilityInternal RepositoryVisibility = "INTERNAL" // The repository is visible only to users in the same business.
 )
 
+// RepositoryVulnerabilityAlertDependencyScope represents the possible scopes of an alert's dependency.
+type RepositoryVulnerabilityAlertDependencyScope string
+
+// The possible scopes of an alert's dependency.
+const (
+	RepositoryVulnerabilityAlertDependencyScopeRuntime     RepositoryVulnerabilityAlertDependencyScope = "RUNTIME"     // A dependency that is leveraged during application runtime.
+	RepositoryVulnerabilityAlertDependencyScopeDevelopment RepositoryVulnerabilityAlertDependencyScope = "DEVELOPMENT" // A dependency that is only used in development.
+)
+
+// RepositoryVulnerabilityAlertState represents the possible states of an alert.
+type RepositoryVulnerabilityAlertState string
+
+// The possible states of an alert.
+const (
+	RepositoryVulnerabilityAlertStateOpen      RepositoryVulnerabilityAlertState = "OPEN"      // An alert that is still open.
+	RepositoryVulnerabilityAlertStateFixed     RepositoryVulnerabilityAlertState = "FIXED"     // An alert that has been resolved by a code change.
+	RepositoryVulnerabilityAlertStateDismissed RepositoryVulnerabilityAlertState = "DISMISSED" // An alert that has been manually closed by a user.
+)
+
 // RequestableCheckStatusState represents the possible states that can be requested when creating a check run.
 type RequestableCheckStatusState string
 
@@ -1306,6 +1681,16 @@ const (
 	RequestableCheckStatusStateCompleted  RequestableCheckStatusState = "COMPLETED"   // The check suite or run has been completed.
 	RequestableCheckStatusStateWaiting    RequestableCheckStatusState = "WAITING"     // The check suite or run is in waiting state.
 	RequestableCheckStatusStatePending    RequestableCheckStatusState = "PENDING"     // The check suite or run is in pending state.
+)
+
+// RoleInOrganization represents possible roles a user may have in relation to an organization.
+type RoleInOrganization string
+
+// Possible roles a user may have in relation to an organization.
+const (
+	RoleInOrganizationOwner        RoleInOrganization = "OWNER"         // A user with full administrative access to the organization.
+	RoleInOrganizationDirectMember RoleInOrganization = "DIRECT_MEMBER" // A user who is a direct member of the organization.
+	RoleInOrganizationUnaffiliated RoleInOrganization = "UNAFFILIATED"  // A user who is unaffiliated with the organization.
 )
 
 // SamlDigestAlgorithm represents the possible digest algorithms used to sign SAML requests for an identity provider.
@@ -1349,19 +1734,31 @@ const (
 	SearchTypeDiscussion SearchType = "DISCUSSION" // Returns matching discussions in repositories.
 )
 
+// SecurityAdvisoryClassification represents classification of the advisory.
+type SecurityAdvisoryClassification string
+
+// Classification of the advisory.
+const (
+	SecurityAdvisoryClassificationGeneral SecurityAdvisoryClassification = "GENERAL" // Classification of general advisories.
+	SecurityAdvisoryClassificationMalware SecurityAdvisoryClassification = "MALWARE" // Classification of malware advisories.
+)
+
 // SecurityAdvisoryEcosystem represents the possible ecosystems of a security vulnerability's package.
 type SecurityAdvisoryEcosystem string
 
 // The possible ecosystems of a security vulnerability's package.
 const (
 	SecurityAdvisoryEcosystemComposer SecurityAdvisoryEcosystem = "COMPOSER" // PHP packages hosted at packagist.org.
+	SecurityAdvisoryEcosystemErlang   SecurityAdvisoryEcosystem = "ERLANG"   // Erlang/Elixir packages hosted at hex.pm.
+	SecurityAdvisoryEcosystemActions  SecurityAdvisoryEcosystem = "ACTIONS"  // GitHub Actions.
 	SecurityAdvisoryEcosystemGo       SecurityAdvisoryEcosystem = "GO"       // Go modules.
 	SecurityAdvisoryEcosystemMaven    SecurityAdvisoryEcosystem = "MAVEN"    // Java artifacts hosted at the Maven central repository.
 	SecurityAdvisoryEcosystemNpm      SecurityAdvisoryEcosystem = "NPM"      // JavaScript packages hosted at npmjs.com.
 	SecurityAdvisoryEcosystemNuget    SecurityAdvisoryEcosystem = "NUGET"    // .NET packages hosted at the NuGet Gallery.
 	SecurityAdvisoryEcosystemPip      SecurityAdvisoryEcosystem = "PIP"      // Python packages hosted at PyPI.org.
+	SecurityAdvisoryEcosystemPub      SecurityAdvisoryEcosystem = "PUB"      // Dart packages hosted at pub.dev.
 	SecurityAdvisoryEcosystemRubygems SecurityAdvisoryEcosystem = "RUBYGEMS" // Ruby gems hosted at RubyGems.org.
-	SecurityAdvisoryEcosystemOther    SecurityAdvisoryEcosystem = "OTHER"    // Applications, runtimes, operating systems and other kinds of software.
+	SecurityAdvisoryEcosystemRust     SecurityAdvisoryEcosystem = "RUST"     // Rust crates.
 )
 
 // SecurityAdvisoryIdentifierType represents identifier formats available for advisories.
@@ -1399,6 +1796,15 @@ type SecurityVulnerabilityOrderField string
 // Properties by which security vulnerability connections can be ordered.
 const (
 	SecurityVulnerabilityOrderFieldUpdatedAt SecurityVulnerabilityOrderField = "UPDATED_AT" // Order vulnerability by update time.
+)
+
+// SponsorOrderField represents properties by which sponsor connections can be ordered.
+type SponsorOrderField string
+
+// Properties by which sponsor connections can be ordered.
+const (
+	SponsorOrderFieldLogin     SponsorOrderField = "LOGIN"     // Order sponsorable entities by login (username).
+	SponsorOrderFieldRelevance SponsorOrderField = "RELEVANCE" // Order sponsors by their relevance to the viewer.
 )
 
 // SponsorableOrderField represents properties by which sponsorable connections can be ordered.
@@ -1447,7 +1853,16 @@ type SponsorsGoalKind string
 // The different kinds of goals a GitHub Sponsors member can have.
 const (
 	SponsorsGoalKindTotalSponsorsCount       SponsorsGoalKind = "TOTAL_SPONSORS_COUNT"       // The goal is about reaching a certain number of sponsors.
-	SponsorsGoalKindMonthlySponsorshipAmount SponsorsGoalKind = "MONTHLY_SPONSORSHIP_AMOUNT" // The goal is about getting a certain dollar amount from sponsorships each month.
+	SponsorsGoalKindMonthlySponsorshipAmount SponsorsGoalKind = "MONTHLY_SPONSORSHIP_AMOUNT" // The goal is about getting a certain amount in USD from sponsorships each month.
+)
+
+// SponsorsListingFeaturedItemFeatureableType represents the different kinds of records that can be featured on a GitHub Sponsors profile page.
+type SponsorsListingFeaturedItemFeatureableType string
+
+// The different kinds of records that can be featured on a GitHub Sponsors profile page.
+const (
+	SponsorsListingFeaturedItemFeatureableTypeRepository SponsorsListingFeaturedItemFeatureableType = "REPOSITORY" // A repository owned by the user or organization with the GitHub Sponsors profile.
+	SponsorsListingFeaturedItemFeatureableTypeUser       SponsorsListingFeaturedItemFeatureableType = "USER"       // A user who belongs to the organization with the GitHub Sponsors profile.
 )
 
 // SponsorsTierOrderField represents properties by which Sponsors tiers connections can be ordered.
@@ -1457,6 +1872,14 @@ type SponsorsTierOrderField string
 const (
 	SponsorsTierOrderFieldCreatedAt           SponsorsTierOrderField = "CREATED_AT"             // Order tiers by creation time.
 	SponsorsTierOrderFieldMonthlyPriceInCents SponsorsTierOrderField = "MONTHLY_PRICE_IN_CENTS" // Order tiers by their monthly price in cents.
+)
+
+// SponsorshipNewsletterOrderField represents properties by which sponsorship update connections can be ordered.
+type SponsorshipNewsletterOrderField string
+
+// Properties by which sponsorship update connections can be ordered.
+const (
+	SponsorshipNewsletterOrderFieldCreatedAt SponsorshipNewsletterOrderField = "CREATED_AT" // Order sponsorship newsletters by when they were created.
 )
 
 // SponsorshipOrderField represents properties by which sponsorship connections can be ordered.
@@ -1474,6 +1897,25 @@ type SponsorshipPrivacy string
 const (
 	SponsorshipPrivacyPublic  SponsorshipPrivacy = "PUBLIC"  // Public.
 	SponsorshipPrivacyPrivate SponsorshipPrivacy = "PRIVATE" // Private.
+)
+
+// SquashMergeCommitMessage represents the possible default commit messages for squash merges.
+type SquashMergeCommitMessage string
+
+// The possible default commit messages for squash merges.
+const (
+	SquashMergeCommitMessagePrBody         SquashMergeCommitMessage = "PR_BODY"         // Default to the pull request's body.
+	SquashMergeCommitMessageCommitMessages SquashMergeCommitMessage = "COMMIT_MESSAGES" // Default to the branch's commit messages.
+	SquashMergeCommitMessageBlank          SquashMergeCommitMessage = "BLANK"           // Default to a blank commit message.
+)
+
+// SquashMergeCommitTitle represents the possible default commit titles for squash merges.
+type SquashMergeCommitTitle string
+
+// The possible default commit titles for squash merges.
+const (
+	SquashMergeCommitTitlePrTitle         SquashMergeCommitTitle = "PR_TITLE"           // Default to the pull request's title.
+	SquashMergeCommitTitleCommitOrPrTitle SquashMergeCommitTitle = "COMMIT_OR_PR_TITLE" // Default to the commit's title (if only one commit) or the pull request's title (when more than one commit).
 )
 
 // StarOrderField represents properties by which star connections can be ordered.
@@ -1600,6 +2042,15 @@ const (
 	TopicSuggestionDeclineReasonTooGeneral         TopicSuggestionDeclineReason = "TOO_GENERAL"         // The suggested topic is too general for the repository.
 )
 
+// TrackedIssueStates represents the possible states of a tracked issue.
+type TrackedIssueStates string
+
+// The possible states of a tracked issue.
+const (
+	TrackedIssueStatesOpen   TrackedIssueStates = "OPEN"   // The tracked issue is open.
+	TrackedIssueStatesClosed TrackedIssueStates = "CLOSED" // The tracked issue is closed.
+)
+
 // UserBlockDuration represents the possible durations that a user can be blocked for.
 type UserBlockDuration string
 
@@ -1627,4 +2078,12 @@ type VerifiableDomainOrderField string
 const (
 	VerifiableDomainOrderFieldDomain    VerifiableDomainOrderField = "DOMAIN"     // Order verifiable domains by the domain name.
 	VerifiableDomainOrderFieldCreatedAt VerifiableDomainOrderField = "CREATED_AT" // Order verifiable domains by their creation date.
+)
+
+// WorkflowRunOrderField represents properties by which workflow run connections can be ordered.
+type WorkflowRunOrderField string
+
+// Properties by which workflow run connections can be ordered.
+const (
+	WorkflowRunOrderFieldCreatedAt WorkflowRunOrderField = "CREATED_AT" // Order workflow runs by most recently created.
 )

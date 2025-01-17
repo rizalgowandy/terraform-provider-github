@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"net"
 
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 func dataSourceGithubIpRanges() *schema.Resource {
@@ -18,6 +18,21 @@ func dataSourceGithubIpRanges() *schema.Resource {
 				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
 			"git": {
+				Type:     schema.TypeList,
+				Computed: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
+			"web": {
+				Type:     schema.TypeList,
+				Computed: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
+			"api": {
+				Type:     schema.TypeList,
+				Computed: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
+			"packages": {
 				Type:     schema.TypeList,
 				Computed: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
@@ -52,6 +67,21 @@ func dataSourceGithubIpRanges() *schema.Resource {
 				Computed: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
+			"web_ipv4": {
+				Type:     schema.TypeList,
+				Computed: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
+			"api_ipv4": {
+				Type:     schema.TypeList,
+				Computed: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
+			"packages_ipv4": {
+				Type:     schema.TypeList,
+				Computed: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
 			"pages_ipv4": {
 				Type:     schema.TypeList,
 				Computed: true,
@@ -78,6 +108,21 @@ func dataSourceGithubIpRanges() *schema.Resource {
 				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
 			"git_ipv6": {
+				Type:     schema.TypeList,
+				Computed: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
+			"web_ipv6": {
+				Type:     schema.TypeList,
+				Computed: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
+			"api_ipv6": {
+				Type:     schema.TypeList,
+				Computed: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
+			"packages_ipv6": {
 				Type:     schema.TypeList,
 				Computed: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
@@ -109,7 +154,7 @@ func dataSourceGithubIpRanges() *schema.Resource {
 func dataSourceGithubIpRangesRead(d *schema.ResourceData, meta interface{}) error {
 	owner := meta.(*Owner)
 
-	api, _, err := owner.v3client.APIMeta(owner.StopContext)
+	api, _, err := owner.v3client.Meta.Get(owner.StopContext)
 	if err != nil {
 		return err
 	}
@@ -120,6 +165,11 @@ func dataSourceGithubIpRangesRead(d *schema.ResourceData, meta interface{}) erro
 	}
 
 	cidrGitIpv4, cidrGitIpv6, err := splitIpv4Ipv6Cidrs(&api.Git)
+	if err != nil {
+		return err
+	}
+
+	cidrPackagesIpv4, cidrPackagesIpv6, err := splitIpv4Ipv6Cidrs(&api.Packages)
 	if err != nil {
 		return err
 	}
@@ -144,38 +194,135 @@ func dataSourceGithubIpRangesRead(d *schema.ResourceData, meta interface{}) erro
 		return err
 	}
 
+	cidrWebIpv4, cidrWebIpv6, err := splitIpv4Ipv6Cidrs(&api.Web)
+	if err != nil {
+		return err
+	}
+
+	cidrApiIpv4, cidrApiIpv6, err := splitIpv4Ipv6Cidrs(&api.API)
+	if err != nil {
+		return err
+	}
+
 	if len(api.Hooks)+len(api.Git)+len(api.Pages)+len(api.Importer)+len(api.Actions)+len(api.Dependabot) > 0 {
 		d.SetId("github-ip-ranges")
 	}
 	if len(api.Hooks) > 0 {
-		d.Set("hooks", api.Hooks)
-		d.Set("hooks_ipv4", cidrHooksIpv4)
-		d.Set("hooks_ipv6", cidrHooksIpv6)
+		err = d.Set("hooks", api.Hooks)
+		if err != nil {
+			return err
+		}
+		err = d.Set("hooks_ipv4", cidrHooksIpv4)
+		if err != nil {
+			return err
+		}
+		err = d.Set("hooks_ipv6", cidrHooksIpv6)
+		if err != nil {
+			return err
+		}
 	}
 	if len(api.Git) > 0 {
-		d.Set("git", api.Git)
-		d.Set("git_ipv4", cidrGitIpv4)
-		d.Set("git_ipv6", cidrGitIpv6)
+		err = d.Set("git", api.Git)
+		if err != nil {
+			return err
+		}
+		err = d.Set("git_ipv4", cidrGitIpv4)
+		if err != nil {
+			return err
+		}
+		err = d.Set("git_ipv6", cidrGitIpv6)
+		if err != nil {
+			return err
+		}
+	}
+	if len(api.Packages) > 0 {
+		d.Set("packages", api.Packages)
+		d.Set("packages_ipv4", cidrPackagesIpv4)
+		d.Set("packages_ipv6", cidrPackagesIpv6)
 	}
 	if len(api.Pages) > 0 {
-		d.Set("pages", api.Pages)
-		d.Set("pages_ipv4", cidrPagesIpv4)
-		d.Set("pages_ipv6", cidrPagesIpv6)
+		err = d.Set("pages", api.Pages)
+		if err != nil {
+			return err
+		}
+		err = d.Set("pages_ipv4", cidrPagesIpv4)
+		if err != nil {
+			return err
+		}
+		err = d.Set("pages_ipv6", cidrPagesIpv6)
+		if err != nil {
+			return err
+		}
 	}
 	if len(api.Importer) > 0 {
-		d.Set("importer", api.Importer)
-		d.Set("importer_ipv4", cidrImporterIpv4)
-		d.Set("importer_ipv6", cidrImporterIpv6)
+		err = d.Set("importer", api.Importer)
+		if err != nil {
+			return err
+		}
+		err = d.Set("importer_ipv4", cidrImporterIpv4)
+		if err != nil {
+			return err
+		}
+		err = d.Set("importer_ipv6", cidrImporterIpv6)
+		if err != nil {
+			return err
+		}
 	}
 	if len(api.Actions) > 0 {
-		d.Set("actions", api.Actions)
-		d.Set("actions_ipv4", cidrActionsIpv4)
-		d.Set("actions_ipv6", cidrActionsIpv6)
+		err = d.Set("actions", api.Actions)
+		if err != nil {
+			return err
+		}
+		err = d.Set("actions_ipv4", cidrActionsIpv4)
+		if err != nil {
+			return err
+		}
+		err = d.Set("actions_ipv6", cidrActionsIpv6)
+		if err != nil {
+			return err
+		}
 	}
 	if len(api.Dependabot) > 0 {
-		d.Set("dependabot", api.Dependabot)
-		d.Set("dependabot_ipv4", cidrDependabotIpv4)
-		d.Set("dependabot_ipv6", cidrDependabotIpv6)
+		err = d.Set("dependabot", api.Dependabot)
+		if err != nil {
+			return err
+		}
+		err = d.Set("dependabot_ipv4", cidrDependabotIpv4)
+		if err != nil {
+			return err
+		}
+		err = d.Set("dependabot_ipv6", cidrDependabotIpv6)
+		if err != nil {
+			return err
+		}
+	}
+	if len(api.Web) > 0 {
+		err = d.Set("web", api.Web)
+		if err != nil {
+			return err
+		}
+		err = d.Set("web_ipv4", cidrWebIpv4)
+		if err != nil {
+			return err
+		}
+		err = d.Set("web_ipv6", cidrWebIpv6)
+		if err != nil {
+			return err
+		}
+	}
+	if len(api.API) > 0 {
+		err = d.Set("api", api.API)
+		if err != nil {
+			return err
+		}
+		err = d.Set("api_ipv4", cidrApiIpv4)
+		if err != nil {
+			return err
+		}
+		err = d.Set("api_ipv6", cidrApiIpv6)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -188,7 +335,7 @@ func splitIpv4Ipv6Cidrs(cidrs *[]string) (*[]string, *[]string, error) {
 	for _, cidr := range *cidrs {
 		cidrHost, _, err := net.ParseCIDR(cidr)
 		if err != nil {
-			return nil, nil, fmt.Errorf("Failed parsing cidr %s (%v)", cidr, err)
+			return nil, nil, fmt.Errorf("failed parsing cidr %s (%v)", cidr, err)
 		}
 		if cidrHost.To4() != nil {
 			cidrIpv4 = append(cidrIpv4, cidr)

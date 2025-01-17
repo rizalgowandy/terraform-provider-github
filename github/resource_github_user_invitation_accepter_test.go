@@ -6,10 +6,10 @@ import (
 	"regexp"
 	"testing"
 
-	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/terraform"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
 
 func TestAccGithubUserInvitationAccepter_basic(t *testing.T) {
@@ -33,6 +33,27 @@ func TestAccGithubUserInvitationAccepter_basic(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(rn, "permission", "push"),
 					resource.TestMatchResourceAttr(rn, "invitation_id", regexp.MustCompile(`^[0-9]+$`)),
+				),
+			},
+		},
+	})
+}
+
+func TestAccGithubUserInvitationAccepterAllowEmptyId(t *testing.T) {
+	rn := "github_user_invitation_accepter.test"
+
+	var providers []*schema.Provider
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:          func() { testAccPreCheck(t) },
+		ProviderFactories: testAccProviderFactories(&providers),
+		CheckDestroy:      testAccCheckGithubUserInvitationAccepterDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccGithubUserInvitationAccepterAllowEmptyId(),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(rn, "invitation_id", ""),
+					resource.TestCheckResourceAttr(rn, "allow_empty_id", "true"),
 				),
 			},
 		},
@@ -71,4 +92,15 @@ resource "github_user_invitation_accepter" "test" {
   invitation_id = "${github_repository_collaborator.test.invitation_id}"
 }
 `, inviteeToken, repoName, testCollaborator)
+}
+
+func testAccGithubUserInvitationAccepterAllowEmptyId() string {
+	return `
+provider "github" {}
+
+resource "github_user_invitation_accepter" "test" {
+  invitation_id  = ""
+  allow_empty_id = true
+}
+`
 }

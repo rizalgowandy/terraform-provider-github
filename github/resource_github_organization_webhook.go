@@ -6,8 +6,8 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/google/go-github/v41/github"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/google/go-github/v66/github"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 func resourceGithubOrganizationWebhook() *schema.Resource {
@@ -18,33 +18,31 @@ func resourceGithubOrganizationWebhook() *schema.Resource {
 		Update: resourceGithubOrganizationWebhookUpdate,
 		Delete: resourceGithubOrganizationWebhookDelete,
 		Importer: &schema.ResourceImporter{
-			State: schema.ImportStatePassthrough,
+			StateContext: schema.ImportStatePassthroughContext,
 		},
 
 		SchemaVersion: 1,
 		MigrateState:  resourceGithubWebhookMigrateState,
 
 		Schema: map[string]*schema.Schema{
-			"name": {
-				Type:     schema.TypeString,
-				Optional: true,
-				Removed:  "The `name` attribute is no longer necessary.",
-			},
 			"events": {
-				Type:     schema.TypeSet,
-				Required: true,
-				Elem:     &schema.Schema{Type: schema.TypeString},
-				Set:      schema.HashString,
+				Type:        schema.TypeSet,
+				Required:    true,
+				Description: "A list of events which should trigger the webhook.",
+				Elem:        &schema.Schema{Type: schema.TypeString},
+				Set:         schema.HashString,
 			},
 			"configuration": webhookConfigurationSchema(),
 			"url": {
-				Type:     schema.TypeString,
-				Computed: true,
+				Type:        schema.TypeString,
+				Computed:    true,
+				Description: "URL of the webhook.",
 			},
 			"active": {
-				Type:     schema.TypeBool,
-				Optional: true,
-				Default:  true,
+				Type:        schema.TypeBool,
+				Optional:    true,
+				Default:     true,
+				Description: "Indicate if the webhook should receive events.",
 			},
 			"etag": {
 				Type:     schema.TypeString,
@@ -69,7 +67,7 @@ func resourceGithubOrganizationWebhookObject(d *schema.ResourceData) *github.Hoo
 
 	config := d.Get("configuration").([]interface{})
 	if len(config) > 0 {
-		hook.Config = config[0].(map[string]interface{})
+		hook.Config = webhookConfigFromInterface(config[0].(map[string]interface{}))
 	}
 
 	return hook
@@ -87,7 +85,6 @@ func resourceGithubOrganizationWebhookCreate(d *schema.ResourceData, meta interf
 	webhookObj := resourceGithubOrganizationWebhookObject(d)
 	ctx := context.Background()
 
-	log.Printf("[DEBUG] Creating organization webhook: %d (%s)", webhookObj.GetID(), orgName)
 	hook, _, err := client.Organizations.CreateHook(ctx, orgName, webhookObj)
 
 	if err != nil {
@@ -98,10 +95,13 @@ func resourceGithubOrganizationWebhookCreate(d *schema.ResourceData, meta interf
 	// GitHub returns the secret as a string of 8 astrisks "********"
 	// We would prefer to store the real secret in state, so we'll
 	// write the configuration secret in state from our request to GitHub
-	if hook.Config["secret"] != nil {
-		hook.Config["secret"] = webhookObj.Config["secret"]
+	if hook.Config.Secret != nil {
+		hook.Config.Secret = webhookObj.Config.Secret
 	}
-	d.Set("configuration", []interface{}{hook.Config})
+
+	if err = d.Set("configuration", interfaceFromWebhookConfig(hook.Config)); err != nil {
+		return err
+	}
 
 	return resourceGithubOrganizationWebhookRead(d, meta)
 }
@@ -124,7 +124,6 @@ func resourceGithubOrganizationWebhookRead(d *schema.ResourceData, meta interfac
 		ctx = context.WithValue(ctx, ctxEtag, d.Get("etag").(string))
 	}
 
-	log.Printf("[DEBUG] Reading organization webhook: %s (%s)", d.Id(), orgName)
 	hook, resp, err := client.Organizations.GetHook(ctx, orgName, hookID)
 	if err != nil {
 		if ghErr, ok := err.(*github.ErrorResponse); ok {
@@ -132,7 +131,7 @@ func resourceGithubOrganizationWebhookRead(d *schema.ResourceData, meta interfac
 				return nil
 			}
 			if ghErr.Response.StatusCode == http.StatusNotFound {
-				log.Printf("[WARN] Removing organization webhook %s/%s from state because it no longer exists in GitHub",
+				log.Printf("[INFO] Removing organization webhook %s/%s from state because it no longer exists in GitHub",
 					orgName, d.Id())
 				d.SetId("")
 				return nil
@@ -141,10 +140,18 @@ func resourceGithubOrganizationWebhookRead(d *schema.ResourceData, meta interfac
 		return err
 	}
 
-	d.Set("etag", resp.Header.Get("ETag"))
-	d.Set("url", hook.GetURL())
-	d.Set("active", hook.GetActive())
-	d.Set("events", hook.Events)
+	if err = d.Set("etag", resp.Header.Get("ETag")); err != nil {
+		return err
+	}
+	if err = d.Set("url", hook.GetURL()); err != nil {
+		return err
+	}
+	if err = d.Set("active", hook.GetActive()); err != nil {
+		return err
+	}
+	if err = d.Set("events", hook.Events); err != nil {
+		return err
+	}
 
 	// GitHub returns the secret as a string of 8 astrisks "********"
 	// We would prefer to store the real secret in state, so we'll
@@ -153,14 +160,14 @@ func resourceGithubOrganizationWebhookRead(d *schema.ResourceData, meta interfac
 	if len(d.Get("configuration").([]interface{})) > 0 {
 		currentSecret := d.Get("configuration").([]interface{})[0].(map[string]interface{})["secret"]
 
-		if hook.Config["secret"] != nil {
-			hook.Config["secret"] = currentSecret
+		if hook.Config.Secret != nil {
+			hook.Config.Secret = github.String(currentSecret.(string))
 		}
 	}
 
-	hook.Config = insecureSslStringToBool(hook.Config)
-
-	d.Set("configuration", []interface{}{hook.Config})
+	if err = d.Set("configuration", interfaceFromWebhookConfig(hook.Config)); err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -180,8 +187,6 @@ func resourceGithubOrganizationWebhookUpdate(d *schema.ResourceData, meta interf
 		return unconvertibleIdErr(d.Id(), err)
 	}
 	ctx := context.WithValue(context.Background(), ctxId, d.Id())
-
-	log.Printf("[DEBUG] Updating organization webhook: %s (%s)", d.Id(), orgName)
 
 	_, _, err = client.Organizations.EditHook(ctx,
 		orgName, hookID, webhookObj)
@@ -207,7 +212,52 @@ func resourceGithubOrganizationWebhookDelete(d *schema.ResourceData, meta interf
 	}
 	ctx := context.WithValue(context.Background(), ctxId, d.Id())
 
-	log.Printf("[DEBUG] Deleting organization webhook: %s (%s)", d.Id(), orgName)
 	_, err = client.Organizations.DeleteHook(ctx, orgName, hookID)
 	return err
+}
+
+func webhookConfigFromInterface(config map[string]interface{}) *github.HookConfig {
+	hookConfig := &github.HookConfig{}
+	if config["url"] != nil {
+		hookConfig.URL = github.String(config["url"].(string))
+	}
+	if config["content_type"] != nil {
+		hookConfig.ContentType = github.String(config["content_type"].(string))
+	}
+	if config["insecure_ssl"] != nil {
+		if insecureSsl, ok := config["insecure_ssl"].(bool); ok {
+			if insecureSsl {
+				hookConfig.InsecureSSL = github.String("1")
+			} else {
+				hookConfig.InsecureSSL = github.String("0")
+			}
+		} else {
+			if config["insecure_ssl"] == "1" || config["insecure_ssl"] == "true" {
+				hookConfig.InsecureSSL = github.String("1")
+			} else {
+				hookConfig.InsecureSSL = github.String("0")
+			}
+		}
+	}
+	if config["secret"] != nil {
+		hookConfig.Secret = github.String(config["secret"].(string))
+	}
+	return hookConfig
+}
+
+func interfaceFromWebhookConfig(config *github.HookConfig) []interface{} {
+	cfg := map[string]interface{}{}
+	if config.URL != nil {
+		cfg["url"] = *config.URL
+	}
+	if config.ContentType != nil {
+		cfg["content_type"] = *config.ContentType
+	}
+	if config.InsecureSSL != nil {
+		cfg["insecure_ssl"] = *config.InsecureSSL == "1"
+	}
+	if config.Secret != nil {
+		cfg["secret"] = *config.Secret
+	}
+	return []interface{}{cfg}
 }

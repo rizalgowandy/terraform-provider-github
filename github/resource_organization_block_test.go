@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/terraform"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
 
 func TestAccOrganizationBlock_basic(t *testing.T) {
@@ -60,7 +60,7 @@ func testAccCheckOrganizationBlockExists(n string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[n]
 		if !ok {
-			return fmt.Errorf("Not Found: %s", n)
+			return fmt.Errorf("not Found: %s", n)
 		}
 
 		username := rs.Primary.ID

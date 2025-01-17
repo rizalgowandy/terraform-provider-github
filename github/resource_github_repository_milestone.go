@@ -9,9 +9,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/google/go-github/v41/github"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+	"github.com/google/go-github/v66/github"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 func resourceGithubRepositoryMilestone() *schema.Resource {
@@ -24,15 +24,21 @@ func resourceGithubRepositoryMilestone() *schema.Resource {
 			State: func(d *schema.ResourceData, meta interface{}) ([]*schema.ResourceData, error) {
 				parts := strings.Split(d.Id(), "/")
 				if len(parts) != 3 || parts[0] == "" || parts[1] == "" || parts[2] == "" {
-					return nil, fmt.Errorf("Invalid ID format, must be provided as OWNER/REPOSITORY/NUMBER")
+					return nil, fmt.Errorf("invalid ID format, must be provided as OWNER/REPOSITORY/NUMBER")
 				}
-				d.Set("owner", parts[0])
-				d.Set("repository", parts[1])
+				if err := d.Set("owner", parts[0]); err != nil {
+					return nil, err
+				}
+				if err := d.Set("repository", parts[1]); err != nil {
+					return nil, err
+				}
 				number, err := strconv.Atoi(parts[2])
 				if err != nil {
 					return nil, err
 				}
-				d.Set("number", number)
+				if err := d.Set("number", number); err != nil {
+					return nil, err
+				}
 				d.SetId(fmt.Sprintf("%s/%s/%d", parts[0], parts[1], number))
 
 				return []*schema.ResourceData{d}, nil
@@ -41,37 +47,43 @@ func resourceGithubRepositoryMilestone() *schema.Resource {
 
 		Schema: map[string]*schema.Schema{
 			"title": {
-				Type:     schema.TypeString,
-				Required: true,
+				Type:        schema.TypeString,
+				Required:    true,
+				Description: "The title of the milestone.",
 			},
 			"owner": {
-				Type:     schema.TypeString,
-				Required: true,
+				Type:        schema.TypeString,
+				Required:    true,
+				Description: "The owner of the GitHub Repository.",
 			},
 			"repository": {
-				Type:     schema.TypeString,
-				Required: true,
+				Type:        schema.TypeString,
+				Required:    true,
+				Description: "The name of the GitHub Repository.",
 			},
 			"description": {
-				Type:     schema.TypeString,
-				Optional: true,
+				Type:        schema.TypeString,
+				Optional:    true,
+				Description: "A description of the milestone.",
 			},
 			"due_date": {
 				Type:        schema.TypeString,
 				Optional:    true,
-				Description: "in yyyy-mm-dd format",
+				Description: "The milestone due date. In 'yyyy-mm-dd' format.",
 			},
 			"state": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ValidateFunc: validation.StringInSlice([]string{
+				ValidateDiagFunc: toDiagFunc(validation.StringInSlice([]string{
 					"open", "closed",
-				}, true),
-				Default: "open",
+				}, true), "state"),
+				Default:     "open",
+				Description: "The state of the milestone. Either 'open' or 'closed'. Default: 'open'.",
 			},
 			"number": {
-				Type:     schema.TypeInt,
-				Computed: true,
+				Type:        schema.TypeInt,
+				Computed:    true,
+				Description: "The number of the milestone.",
 			},
 		},
 	}
@@ -100,13 +112,14 @@ func resourceGithubRepositoryMilestoneCreate(d *schema.ResourceData, meta interf
 			return err
 		}
 		date := time.Date(dueDate.Year(), dueDate.Month(), dueDate.Day(), 23, 39, 0, 0, time.UTC)
-		milestone.DueOn = &date
+		milestone.DueOn = &github.Timestamp{
+			Time: date,
+		}
 	}
 	if v, ok := d.GetOk("state"); ok && len(v.(string)) > 0 {
 		milestone.State = github.String(v.(string))
 	}
 
-	log.Printf("[DEBUG] Creating milestone for repository: %s/%s", owner, repoName)
 	milestone, _, err := conn.Issues.CreateMilestone(ctx, owner, repoName, milestone)
 	if err != nil {
 		return err
@@ -128,7 +141,6 @@ func resourceGithubRepositoryMilestoneRead(d *schema.ResourceData, meta interfac
 		return err
 	}
 
-	log.Printf("[DEBUG] Reading milestone for repository: %s/%s", owner, repoName)
 	milestone, _, err := conn.Issues.GetMilestone(ctx, owner, repoName, number)
 	if err != nil {
 		if ghErr, ok := err.(*github.ErrorResponse); ok {
@@ -136,7 +148,7 @@ func resourceGithubRepositoryMilestoneRead(d *schema.ResourceData, meta interfac
 				return nil
 			}
 			if ghErr.Response.StatusCode == http.StatusNotFound {
-				log.Printf("[WARN] Removing milestone for %s/%s from state because it no longer exists in GitHub",
+				log.Printf("[INFO] Removing milestone for %s/%s from state because it no longer exists in GitHub",
 					owner, repoName)
 				d.SetId("")
 				return nil
@@ -145,12 +157,22 @@ func resourceGithubRepositoryMilestoneRead(d *schema.ResourceData, meta interfac
 		return err
 	}
 
-	d.Set("title", milestone.GetTitle())
-	d.Set("description", milestone.GetDescription())
-	d.Set("number", milestone.GetNumber())
-	d.Set("state", milestone.GetState())
+	if err = d.Set("title", milestone.GetTitle()); err != nil {
+		return err
+	}
+	if err = d.Set("description", milestone.GetDescription()); err != nil {
+		return err
+	}
+	if err = d.Set("number", milestone.GetNumber()); err != nil {
+		return err
+	}
+	if err = d.Set("state", milestone.GetState()); err != nil {
+		return err
+	}
 	if dueOn := milestone.GetDueOn(); !dueOn.IsZero() {
-		d.Set("due_date", milestone.GetDueOn().Format(layoutISO))
+		if err := d.Set("due_date", milestone.GetDueOn().Format(layoutISO)); err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -184,7 +206,9 @@ func resourceGithubRepositoryMilestoneUpdate(d *schema.ResourceData, meta interf
 			return err
 		}
 		date := time.Date(dueDate.Year(), dueDate.Month(), dueDate.Day(), 7, 0, 0, 0, time.UTC)
-		milestone.DueOn = &date
+		milestone.DueOn = &github.Timestamp{
+			Time: date,
+		}
 	}
 
 	if d.HasChanges("state") {
@@ -192,7 +216,6 @@ func resourceGithubRepositoryMilestoneUpdate(d *schema.ResourceData, meta interf
 		milestone.State = github.String(n.(string))
 	}
 
-	log.Printf("[DEBUG] Updating milestone for repository: %s/%s", owner, repoName)
 	_, _, err = conn.Issues.EditMilestone(ctx, owner, repoName, number, milestone)
 	if err != nil {
 		return err
@@ -211,7 +234,6 @@ func resourceGithubRepositoryMilestoneDelete(d *schema.ResourceData, meta interf
 		return err
 	}
 
-	log.Printf("[DEBUG] Deleting milestone for repository: %s/%s", owner, repoName)
 	_, err = conn.Issues.DeleteMilestone(ctx, owner, repoName, number)
 	if err != nil {
 		return err
